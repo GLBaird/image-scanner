@@ -8,7 +8,7 @@
     "start": "ts-node service",
     "dev": "nodemon service.ts",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --require ts-node/register tests/**/*.spec.ts"
   },
   "keywords": [],
   "author": "leonbaird@mac.com",
@@ -20,6 +20,7 @@
     "@types/node": "^22.15.30",
     "express": "^5.1.0",
     "grpc-tools": "^1.13.0",
+    "mocha": "^11.5.0",
     "nodemon": "^3.1.10",
     "prisma": "^6.9.0",
     "protobufjs": "^7.5.3",
