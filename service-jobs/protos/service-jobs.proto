@@ -1,0 +1,142 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package jobmanager;
+
+// ---------------------------
+// Service API
+// ---------------------------
+
+// All headers to service must include Corr-Id header
+service JobManagerController {
+    // get all jobs with paging options
+    rpc getAllJobs(GetJobsRequest) returns (GetJobsResponse);
+    
+    // get all jobs currently being processed and scanned
+    rpc getAllJobsInProgress(GetJobsRequest) returns (GetJobsResponse);
+
+    // create new job
+    rpc createNewJob(CreateNewJobReqest) returns (CreateNewJobResponse);
+
+    // delete a job and all related data
+    rpc deleteJobAndAllData(DeleteJobRequest) returns (DeleteJobResponse);
+
+    // gives list of available sources for adding to a new job
+    rpc getAvailableSources(GetAvailableSourcesRequest) returns (GetAvailableSourcesResponse);
+
+    // start scanning a job for image files and run data extraction services
+    rpc startScanningJob(StartScanningJobRequest) returns (StartScanningJobResponse);
+}
+
+// ---------------------------
+// Message definitions
+// ---------------------------
+
+// job data and scanning progress
+message Job {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    string source = 4;
+    uint64 images = 5;
+    uint64 jpeg = 6;
+    uint64 png = 7;
+    string createdBy = 8;
+    google.protobuf.Timestamp createdAt = 9;
+    bool scanned = 10;
+    bool inProgress = 11;
+}
+
+message JobList {
+    repeated Job jobs = 1;
+}
+
+// information for sources
+message SourceInfo {
+    // name of folder found in /service-jobs/sources or in /volumes if unix/linux and mounted on container
+    string name = 1;
+    google.protobuf.Timestamp createdAt = 2;
+    google.protobuf.Timestamp modifiedAt = 3;
+}
+
+message SourceList {
+    repeated SourceInfo sources = 1;
+}
+
+// Service error info
+message ServiceError {
+    uint32 code = 1;
+    string type = 2;
+    string message = 3;
+    google.protobuf.Timestamp date = 4;
+}
+
+message ErrorList {
+    repeated ServiceError errors = 1;
+}
+
+// ---------------------------
+// Requests / Responses
+// ---------------------------
+
+// include X-Correlation-ID header
+message GetJobsRequest {
+    // number of jobs you wish to return
+    uint32 items = 1;
+    // cursor (id) of job you wish to start paging from - use blank string '' for first request
+    string cursor = 2;
+}
+
+message GetJobsResponse {
+    oneof result {
+        JobList jobs = 1;
+        ErrorList errors = 2;
+    }
+}
+
+message CreateNewJobReqest {
+    string name = 1;
+    string description = 2;
+    string source = 3;
+}
+
+message CreateNewJobResponse {
+    oneof result {
+        string id = 1;
+        ErrorList errors = 2;
+    }
+}
+
+message DeleteJobRequest {
+    string id = 1;
+}
+
+message DeleteJobResponse {
+    oneof result {
+        bool success = 1;
+        ErrorList errors = 2;
+    }
+}
+
+message GetAvailableSourcesRequest {}
+
+message GetAvailableSourcesResponse {
+    oneof result {
+        SourceList sources = 1;
+        ErrorList errors = 2;
+    }
+}
+
+message StartScanningJobRequest {
+    string id = 1;
+}
+
+message StartScanningJobResponse {
+    oneof result {
+        // state of job: started | in-progress | completed
+        string state = 1;
+        ErrorList errors = 2;
+    }
+}
+

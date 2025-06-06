@@ -1,0 +1,7 @@
+{
+    "editor.linkedEditing": true,
+    "javascript.preferences.quoteStyle": "single",
+    "typescript.preferences.quoteStyle": "single",
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true
+}

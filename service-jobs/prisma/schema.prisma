@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+    provider = "prisma-client-js"
+    output   = "../generated/prisma"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Job {
+    id          String   @id @default(cuid())
+    name        String
+    description String
+    source      String
+    images      Int      @default(0)
+    jpegs       Int      @default(0)
+    pngs        Int      @default(0)
+    createdBy   String
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+    scanned     Boolean  @default(false)
+    inProgress  Boolean  @default(false)
+}
+
+model Image {
+    id             String          @id @default(cuid())
+    mimetype       String
+    filesize       Int
+    width          Int
+    height         Int
+    createdAt      DateTime        @default(now())
+    md5            String          @unique
+    sha1           String
+    jobIds         String[]
+    exifData       ExifData?
+    classification Classification?
+    faces          Face[]
+
+    @@index([md5, sha1])
+}
+
+model ExifData {
+    md5       String   @unique
+    createdAt DateTime @default(now())
+    exif      String
+    image     Image    @relation(fields: [md5], references: [md5], onDelete: Cascade)
+
+    @@id([md5])
+}
+
+model Face {
+    id        String   @id @default(cuid())
+    md5       String
+    createdAt DateTime @default(now())
+    hash      String
+    coordX    Int
+    coordY    Int
+    width     Int
+    height    Int
+    image     Image    @relation(fields: [md5], references: [md5], onDelete: Cascade)
+
+    @@index([md5])
+}
+
+model Classification {
+    md5       String   @unique
+    tags      String[]
+    createdAt DateTime @default(now())
+    image     Image    @relation(fields: [md5], references: [md5], onDelete: Cascade)
+
+    @@id([md5])
+    @@index([md5])
+}

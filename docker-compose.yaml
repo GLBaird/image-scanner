@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine  
+    container_name: postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # TZ: "UTC"  # Uncomment to set container timezone
+
+    volumes:
+      - ./db:/var/lib/postgresql/data
+
+    ports:
+      - "5432:5432"
+
+    # Health‑check so Docker Compose can wait for Postgres to be ready.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - scanner
+
+  pgadmin:
+    image: dpage/pgadmin4:8  
+    container_name: pgadmin
+    restart: unless-stopped
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+
+    volumes:
+      - ./pgadmin:/var/lib/pgadmin
+
+    ports:
+      - "5050:80"
+
+    depends_on:
+      - postgres
+    networks:
+      - scanner
+
+networks:
+  scanner:
+    driver: bridge
