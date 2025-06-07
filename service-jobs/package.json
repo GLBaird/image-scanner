@@ -9,7 +9,7 @@
     "dev": "nodemon service.ts",
     "build": "tsc",
     "test": "mocha --require ts-node/register tests/**/*.spec.ts"
-  },
+    },
   "keywords": [],
   "author": "leonbaird@mac.com",
   "license": "ISC",

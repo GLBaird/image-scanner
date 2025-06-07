@@ -5,6 +5,7 @@ import ServiceError from '../utils/ServiceError';
 import { createJob, getAllJobs } from '../data-access/Job';
 import { toTimestamp } from '../utils/timestamp';
 import { Job } from '../generated/jobmanager/Job';
+import ProgressStore from '../data-access/ProgressStore';
 
 const getCorrId = (metadata: Metadata) =>
     metadata.get('x-correlation-id')[0] as string | undefined;
@@ -19,6 +20,7 @@ const JobManagerController: JobManagerControllerHandlers = {
         const { request } = call;
         const corrId = getCorrId(call.metadata);
         const logId = loggerMeta('createNewJob', corrId);
+
         if (!corrId) {
             logger.info('bad request', logId);
             return callback(new ServiceError('bad request', 400));
