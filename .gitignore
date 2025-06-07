@@ -49,8 +49,8 @@ generated
 !generated/.gitkeep
 
 # job sources folder
-service-jobs/source/
+service-jobs/sources
 !service-jobs/source/.gitkeep
 
 # logs
-logs/*
+logs

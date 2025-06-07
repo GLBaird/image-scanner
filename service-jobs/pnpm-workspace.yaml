@@ -1,0 +1,7 @@
+ignoredBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - grpc-tools
+  - prisma
+  - protobufjs
+  - protoc-gen-js

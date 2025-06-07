@@ -1,4 +1,15 @@
+import { Metadata } from '@grpc/grpc-js';
 import { JobManagerControllerHandlers } from '../generated/jobmanager/JobManagerController';
+import logger, { getLoggerMetaFactory } from '../logger';
+import ServiceError from '../utils/ServiceError';
+import { createJob, getAllJobs } from '../data-access/Job';
+import { toTimestamp } from '../utils/timestamp';
+import { Job } from '../generated/jobmanager/Job';
+
+const getCorrId = (metadata: Metadata) =>
+    metadata.get('x-correlation-id')[0] as string | undefined;
+
+const loggerMeta = getLoggerMetaFactory('JobManagerController');
 
 /**
  * Controller for handling incoming messages via gRPC - based on the PROTO file
@@ -6,9 +17,47 @@ import { JobManagerControllerHandlers } from '../generated/jobmanager/JobManager
 const JobManagerController: JobManagerControllerHandlers = {
     createNewJob: async (call, callback) => {
         const { request } = call;
+        const corrId = getCorrId(call.metadata);
+        const logId = loggerMeta('createNewJob', corrId);
+        if (!corrId) {
+            logger.info('bad request', logId);
+            return callback(new ServiceError('bad request', 400));
+        }
+        try {
+            const id = await createJob(request);
+            callback(null, { id });
+            logger.info(`created new job: ${id}`, logId);
+        } catch (error) {
+            logger.error(`error creating new job: ${error}`, logId);
+            if (error instanceof ServiceError) {
+                callback(error);
+            } else {
+                callback(new ServiceError(`error creating job: ${error}`, 500));
+            }
+        }
     },
     getAllJobs: async (call, callback) => {
         const { request } = call;
+        const corrId = getCorrId(call.metadata);
+        const logId = loggerMeta('getAllJobs', corrId);
+        if (!corrId) {
+            logger.info('bad request', logId);
+            return callback(new ServiceError('bad request', 400));
+        }
+        try {
+            const jobs = (await getAllJobs(request)).map((j) => ({
+                ...j,
+                createdAt: toTimestamp(j.createdAt),
+            })) as Job[];
+            callback(null, { jobs: { values: jobs } });
+        } catch (error) {
+            logger.error(`error getting jobs: ${error}`, logId);
+            if (error instanceof ServiceError) {
+                callback(error);
+            } else {
+                callback(new ServiceError(`error getting job: ${error}`, 500));
+            }
+        }
     },
     getAllJobsInProgress: async (call, callback) => {
         const { request } = call;

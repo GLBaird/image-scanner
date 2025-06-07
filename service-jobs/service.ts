@@ -5,6 +5,7 @@ import { ProtoGrpcType } from './generated/service-jobs';
 import JobManagerController from './controllers/JobManagerController';
 import config from './configs/server';
 import logger, { getLoggerMetaFactory } from './logger';
+import prisma from './prisma/client';
 
 const PROTO_FILE = './protos/service-jobs.proto';
 
@@ -23,9 +24,9 @@ function getServer() {
     return server;
 }
 
-function main() {
-    const logMeta = getLoggerMetaFactory('/main')('');
+const logMeta = getLoggerMetaFactory('/main')('');
 
+function main() {
     // setup gRPC
     const server = getServer();
     server.bindAsync(
@@ -41,4 +42,10 @@ function main() {
     );
 }
 
-main();
+// launch service and error catch to disconnect from prisma
+try {
+    main();
+} catch (error) {
+    logger.error(`service error: ${error}`, logMeta);
+    prisma.$disconnect().then(() => process.exit(1));
+}

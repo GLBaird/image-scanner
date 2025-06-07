@@ -22,7 +22,7 @@ model Job {
     images      Int      @default(0)
     jpegs       Int      @default(0)
     pngs        Int      @default(0)
-    createdBy   String
+    userId      String
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
     scanned     Boolean  @default(false)
@@ -35,6 +35,7 @@ model Image {
     filesize       Int
     width          Int
     height         Int
+    source         String
     createdAt      DateTime        @default(now())
     md5            String          @unique
     sha1           String

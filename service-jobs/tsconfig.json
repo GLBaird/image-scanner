@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "strictNullChecks": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "downlevelIteration": true,
   },
 }

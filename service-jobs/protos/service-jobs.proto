@@ -40,28 +40,28 @@ message Job {
     string description = 3;
     string source = 4;
     uint64 images = 5;
-    uint64 jpeg = 6;
-    uint64 png = 7;
-    string createdBy = 8;
-    google.protobuf.Timestamp createdAt = 9;
+    uint64 jpegs = 6;
+    uint64 pngs = 7;
+    string user_id = 8;
+    google.protobuf.Timestamp created_at = 9;
     bool scanned = 10;
-    bool inProgress = 11;
+    bool in_progress = 11;
 }
 
 message JobList {
-    repeated Job jobs = 1;
+    repeated Job values = 1;
 }
 
 // information for sources
 message SourceInfo {
     // name of folder found in /service-jobs/sources or in /volumes if unix/linux and mounted on container
     string name = 1;
-    google.protobuf.Timestamp createdAt = 2;
-    google.protobuf.Timestamp modifiedAt = 3;
+    google.protobuf.Timestamp created_at = 2;
+    google.protobuf.Timestamp modified_at = 3;
 }
 
 message SourceList {
-    repeated SourceInfo sources = 1;
+    repeated SourceInfo values = 1;
 }
 
 // Service error info
@@ -73,7 +73,13 @@ message ServiceError {
 }
 
 message ErrorList {
-    repeated ServiceError errors = 1;
+    repeated ServiceError values = 1;
+}
+
+enum Order {
+    ORDER_UNSPECIFIED = 0;
+    ASC   = 1;
+    DESC  = 2;
 }
 
 // ---------------------------
@@ -86,6 +92,8 @@ message GetJobsRequest {
     uint32 items = 1;
     // cursor (id) of job you wish to start paging from - use blank string '' for first request
     string cursor = 2;
+    // order of jobs sorted by creation date - either asc or desc
+    Order order = 3;
 }
 
 message GetJobsResponse {
@@ -99,6 +107,7 @@ message CreateNewJobReqest {
     string name = 1;
     string description = 2;
     string source = 3;
+    string user_id = 4;
 }
 
 message CreateNewJobResponse {
