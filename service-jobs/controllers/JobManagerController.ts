@@ -4,15 +4,14 @@ import logger, { getLoggerMetaFactory } from '../logger';
 import ServiceError from '../utils/ServiceError';
 import {
     createJob,
+    deleteJob,
     getAllJobs,
     getAllJobsInProgress,
 } from '../data-access/Job';
 import { toTimestamp } from '../utils/timestamp';
 import { Job } from '../generated/jobmanager/Job';
 import ProgressStore from '../data-access/ProgressStore';
-
-const getCorrId = (metadata: Metadata) =>
-    metadata.get('x-correlation-id')[0] as string | undefined;
+import getCorrId from '../utils/get-correlation-id';
 
 const loggerMeta = getLoggerMetaFactory('JobManagerController');
 
@@ -56,6 +55,7 @@ const JobManagerController: JobManagerControllerHandlers = {
                 createdAt: toTimestamp(j.createdAt),
             })) as Job[];
             callback(null, { jobs: { values: jobs } });
+            logger.info('get all jobs', logId);
         } catch (error) {
             logger.error(`error getting jobs: ${error}`, logId);
             if (error instanceof ServiceError) {
@@ -78,8 +78,8 @@ const JobManagerController: JobManagerControllerHandlers = {
                 ...j,
                 createdAt: toTimestamp(j.createdAt),
             })) as Job[];
-            console.log('AHH', jobs);
             callback(null, { jobs: { values: jobs } });
+            logger.info('get all jobs in progress', logId);
         } catch (error) {
             logger.error(`error getting jobs in progress: ${error}`, logId);
             if (error instanceof ServiceError) {
@@ -96,6 +96,32 @@ const JobManagerController: JobManagerControllerHandlers = {
     },
     deleteJobAndAllData: async (call, callback) => {
         const { request } = call;
+        const corrId = getCorrId(call.metadata);
+        const logId = loggerMeta('getAllJobsInProgress', corrId);
+        if (!corrId) {
+            logger.info('bad request', logId);
+            return callback(new ServiceError('bad request', 400));
+        }
+        try {
+            await deleteJob(request);
+            callback(null, { success: true });
+            logger.info(`delete job and related data: ${request.id}`, logId);
+        } catch (error) {
+            logger.error(
+                `error deleting a job and related data: ${error}`,
+                logId,
+            );
+            if (error instanceof ServiceError) {
+                callback(error);
+            } else {
+                callback(
+                    new ServiceError(
+                        `error deleting a job and related data: ${error}`,
+                        500,
+                    ),
+                );
+            }
+        }
     },
     getAvailableSources: async (call, callback) => {
         const { request } = call;

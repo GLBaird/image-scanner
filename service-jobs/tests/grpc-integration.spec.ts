@@ -9,6 +9,7 @@ import { CreateNewJobResponse__Output } from '../generated/jobmanager/CreateNewJ
 import { GetJobsResponse__Output } from '../generated/jobmanager/GetJobsResponse';
 import { notSuperset } from './helpers/set-comparisons';
 import { fromTimestamp } from '../utils/timestamp';
+import { DeleteJobResponse__Output } from '../generated/jobmanager/DeleteJobResponse';
 
 // global test data
 const userId = uuid();
@@ -196,7 +197,6 @@ describe('gRPC Integration Test', function () {
         assert(response);
         assert.equal(response.errors, undefined);
         let jobsInProgressCount = response.jobs?.values?.length ?? 0;
-        console.log('>>', response.jobs?.values);
         assert.equal(jobsInProgressCount, 0);
 
         // add some jobs in progress, with 10 marked as scanned as well as in progress
@@ -247,6 +247,120 @@ describe('gRPC Integration Test', function () {
 
     it('should delete jobs and all data', async () => {
         await eraseAllData();
-        
+
+        const { id: jobId } = await prisma.job.create({
+            data: {
+                name: 'test',
+                description: 'test',
+                source: '/test',
+                userId: 'user-01',
+                inProgress: false,
+                scanned: true,
+                images: 1,
+                jpegs: 1,
+                pngs: 0,
+            },
+        });
+        const baseImage = {
+            sha1: 'sha1',
+            filesize: 100,
+            width: 100,
+            height: 100,
+            mimetype: 'image/jpeg',
+        };
+
+        const md5 = 'image1-md5';
+
+        const image1 = await prisma.image.create({
+            data: {
+                ...baseImage,
+                jobIds: [jobId],
+                md5,
+            },
+        });
+
+        const image2 = await prisma.image.create({
+            data: {
+                ...baseImage,
+                jobIds: ['different', jobId],
+                md5: 'image2-md5',
+            },
+        });
+
+        const image3 = await prisma.image.create({
+            data: {
+                ...baseImage,
+                jobIds: ['different'],
+                md5: 'image3-md5',
+            },
+        });
+
+        const exifData = await prisma.exifData.create({
+            data: {
+                md5,
+                exif: "{ value: 'data' }",
+            },
+        });
+
+        const faceData = await prisma.face.create({
+            data: {
+                md5,
+                hash: 'face-hash',
+                coordX: 100,
+                coordY: 100,
+                width: 100,
+                height: 100,
+            },
+        });
+
+        const classificationData = await prisma.classification.create({
+            data: {
+                md5,
+                tags: ['human', 'window', 'chair', 'fire'],
+            },
+        });
+
+        // should delete only image1, but delete all cascading data to objects grouped via md5
+
+        const response = await new Promise<
+            DeleteJobResponse__Output | undefined
+        >((resolve, reject) => {
+            client.deleteJobAndAllData({ id: jobId }, meta, (err, resp) => {
+                if (err) reject(err);
+                else resolve(resp);
+            });
+        });
+
+        assert(response);
+        assert.equal(response.errors, undefined);
+        assert(response.success);
+
+        // check correct data is deleted
+        const checkJob = await prisma.job.count({ where: { id: jobId } });
+        assert.equal(checkJob, 0);
+        const checkImage = await prisma.image.count({
+            where: { id: image1.id },
+        });
+        assert.equal(checkImage, 0);
+        const checkExif = await prisma.exifData.count({ where: { md5 } });
+        assert.equal(checkExif, 0);
+        const checkFace = await prisma.face.count({
+            where: { id: faceData.id },
+        });
+        assert.equal(checkFace, 0);
+        const checkClassification = await prisma.classification.count({
+            where: { md5 },
+        });
+        assert.equal(checkClassification, 0);
+
+        // check other image data remains
+        const checkImage2 = await prisma.image.count({
+            where: { id: image2.id },
+        });
+        assert.equal(checkImage2, 1);
+        const checkImage3 = await prisma.image.count({
+            where: { id: image3.id },
+        });
+        assert.equal(checkImage3, 1);
     });
 });
