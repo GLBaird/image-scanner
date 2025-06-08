@@ -106,9 +106,10 @@ describe('gRPC Integration Test', function () {
     function getJobsFromGrpc(
         items: number = imageCount,
         cursor: string = '',
+        method: 'getAllJobs' | 'getAllJobsInProgress' = 'getAllJobs',
     ): Promise<GetJobsResponse__Output | undefined> {
         return new Promise((resolve, reject) => {
-            client.getAllJobs({ items, cursor }, meta, (err, response) => {
+            client[method]({ items, cursor }, meta, (err, response) => {
                 if (err) reject(err);
                 else resolve(response);
             });
@@ -183,5 +184,69 @@ describe('gRPC Integration Test', function () {
             response2.jobs?.values?.map((j) => j.id),
         );
         assert(notSuperset(firstBatchIds, secondBatchIds));
+    });
+
+    it('should get jobs in progress', async () => {
+        let response = await getJobsFromGrpc(
+            imageCount,
+            '',
+            'getAllJobsInProgress',
+        );
+
+        assert(response);
+        assert.equal(response.errors, undefined);
+        let jobsInProgressCount = response.jobs?.values?.length ?? 0;
+        console.log('>>', response.jobs?.values);
+        assert.equal(jobsInProgressCount, 0);
+
+        // add some jobs in progress, with 10 marked as scanned as well as in progress
+        await createJobs(userId, 50, false, true);
+        await createJobs(userId, 10, true, true);
+
+        response = await getJobsFromGrpc(
+            imageCount,
+            '',
+            'getAllJobsInProgress',
+        );
+        assert(response);
+        assert.equal(response.errors, undefined);
+        jobsInProgressCount = response.jobs?.values?.length ?? 0;
+        assert.equal(jobsInProgressCount, 50);
+
+        response.jobs?.values?.forEach((job) => assert(job.inProgress));
+
+        // check paging
+        const response2 = await getJobsFromGrpc(
+            jobsInProgressCount / 2,
+            '',
+            'getAllJobsInProgress',
+        );
+        assert(response2);
+        assert.equal(response2.errors, undefined);
+        assert.equal(
+            response2.jobs?.values?.length ?? 0,
+            jobsInProgressCount / 2,
+        );
+        response2.jobs?.values?.forEach((job) => assert(job.inProgress));
+        const finalId = response2.jobs?.values?.slice(-1).pop()?.id;
+        assert(finalId);
+
+        const response3 = await getJobsFromGrpc(
+            jobsInProgressCount / 2,
+            finalId,
+            'getAllJobsInProgress',
+        );
+        assert(response3);
+        assert.equal(response2.errors, undefined);
+        assert.equal(
+            response3.jobs?.values?.length ?? 0,
+            jobsInProgressCount / 2,
+        );
+        response3.jobs?.values?.forEach((job) => assert(job.inProgress));
+    });
+
+    it('should delete jobs and all data', async () => {
+        await eraseAllData();
+        
     });
 });

@@ -2,7 +2,11 @@ import { Metadata } from '@grpc/grpc-js';
 import { JobManagerControllerHandlers } from '../generated/jobmanager/JobManagerController';
 import logger, { getLoggerMetaFactory } from '../logger';
 import ServiceError from '../utils/ServiceError';
-import { createJob, getAllJobs } from '../data-access/Job';
+import {
+    createJob,
+    getAllJobs,
+    getAllJobsInProgress,
+} from '../data-access/Job';
 import { toTimestamp } from '../utils/timestamp';
 import { Job } from '../generated/jobmanager/Job';
 import ProgressStore from '../data-access/ProgressStore';
@@ -57,12 +61,38 @@ const JobManagerController: JobManagerControllerHandlers = {
             if (error instanceof ServiceError) {
                 callback(error);
             } else {
-                callback(new ServiceError(`error getting job: ${error}`, 500));
+                callback(new ServiceError(`error getting jobs: ${error}`, 500));
             }
         }
     },
     getAllJobsInProgress: async (call, callback) => {
         const { request } = call;
+        const corrId = getCorrId(call.metadata);
+        const logId = loggerMeta('getAllJobsInProgress', corrId);
+        if (!corrId) {
+            logger.info('bad request', logId);
+            return callback(new ServiceError('bad request', 400));
+        }
+        try {
+            const jobs = (await getAllJobsInProgress(request)).map((j) => ({
+                ...j,
+                createdAt: toTimestamp(j.createdAt),
+            })) as Job[];
+            console.log('AHH', jobs);
+            callback(null, { jobs: { values: jobs } });
+        } catch (error) {
+            logger.error(`error getting jobs in progress: ${error}`, logId);
+            if (error instanceof ServiceError) {
+                callback(error);
+            } else {
+                callback(
+                    new ServiceError(
+                        `error getting jobs in progress: ${error}`,
+                        500,
+                    ),
+                );
+            }
+        }
     },
     deleteJobAndAllData: async (call, callback) => {
         const { request } = call;
