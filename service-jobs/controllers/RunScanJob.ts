@@ -1,4 +1,4 @@
-import { sendUnaryData } from '@grpc/grpc-js';
+import { sendUnaryData, status } from '@grpc/grpc-js';
 import * as path from 'path';
 import { StartScanningJobRequest } from '../generated/jobmanager/StartScanningJobRequest';
 import { StartScanningJobResponse } from '../generated/jobmanager/StartScanningJobResponse';
@@ -25,7 +25,7 @@ export default async function runScanJob(
     const logId = getLoggerMetaFactory('runScanJob')('', corrId);
     if (!request.id) {
         logger.error(`failed to start scanner job, no job id provided`, logId);
-        return callback(new ServiceError('bad request', 400));
+        return callback(new ServiceError('bad request', status.CANCELLED));
     }
 
     const jobId = request.id;
@@ -37,7 +37,7 @@ export default async function runScanJob(
     const job = await updateJobProgress(jobId, true);
     if (!job) {
         logger.error(`failed to find job for id: ${jobId}, file scan aborted`, logId);
-        return callback(new ServiceError('job not found', 404));
+        return callback(new ServiceError('job not found', status.NOT_FOUND));
     }
 
     const { source } = job;

@@ -10,17 +10,12 @@ import prisma from './prisma/client';
 const PROTO_FILE = './protos/service-jobs.proto';
 
 const packageDef = protoLoader.loadSync(path.resolve(__dirname, PROTO_FILE));
-const grpcObj = grpc.loadPackageDefinition(
-    packageDef,
-) as unknown as ProtoGrpcType;
+const grpcObj = grpc.loadPackageDefinition(packageDef) as unknown as ProtoGrpcType;
 const sourcePackage = grpcObj.jobmanager;
 
 function getServer() {
     const server = new grpc.Server();
-    server.addService(
-        sourcePackage.JobManagerController.service,
-        JobManagerController,
-    );
+    server.addService(sourcePackage.JobManagerController.service, JobManagerController);
     return server;
 }
 

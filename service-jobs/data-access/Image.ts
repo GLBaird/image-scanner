@@ -1,3 +1,4 @@
+import { status } from '@grpc/grpc-js';
 import { GetImagesRequest } from '../generated/jobmanager/GetImagesRequest';
 import logger from '../logger';
 import prisma from '../prisma/client';
@@ -55,7 +56,6 @@ export async function addImageDataForJob(jobId: string, data: ImageData): Promis
     pending.push({ jobId, data });
     if (!ref) {
         ref = setInterval(async () => {
-            console.log('checking');
             if (pending.length === 0) {
                 clearInterval(ref);
                 ref = undefined;
@@ -94,7 +94,7 @@ export async function getImageStatsForJob(jobId: string): Promise<{ pngs: number
  */
 export async function getImagesForJob(request: GetImagesRequest): Promise<ExtendedImageData[]> {
     const { jobId } = request;
-    if (!jobId) throw new ServiceError('bad request', 400);
+    if (!jobId) throw new ServiceError('bad request', status.CANCELLED);
     const { items, cursor, order } = extractPageParamsFromRequest(request);
     return await prisma.image.findMany({
         where: { jobIds: { has: jobId } },

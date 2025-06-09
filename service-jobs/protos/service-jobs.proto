@@ -28,8 +28,11 @@ service JobManagerController {
     // start scanning a job for image files and run data extraction services
     rpc startScanningJob(StartScanningJobRequest) returns (StartScanningJobResponse);
 
-    // get image data stored for a given job
+    // get extracted data for images stored for a given job
     rpc getImages(GetImagesRequest) returns (GetImagesResponse);
+
+    // get actual image data for rendering and extracting data
+    rpc GetData(GetDataRequest) returns (stream GetDataResponse) {};
 }
 
 // ---------------------------
@@ -142,7 +145,6 @@ message CreateNewJobReqest {
     string name = 1;
     string description = 2;
     string source = 3;
-    string user_id = 4;
 }
 
 message CreateNewJobResponse {
@@ -201,3 +203,13 @@ message GetImagesResponse {
         ErrorList errors = 2;
     }
 }
+
+message GetDataRequest {
+    // file ref to load from source
+    // ie. /my-source/path/to/file.jpg
+    string filepath = 1;
+  }
+  
+  message GetDataResponse {
+    bytes data = 1;
+  }

@@ -8,7 +8,7 @@ export const EnvVariables = {
         default: 'postgresql://postgres:postgres@localhost:5432/scanner-frontend?schema=public',
     },
     /** @description Added by `npx auth`. Read more: https://cli.authjs.dev */
-    authSecret: { ref: 'AUTH_SECRET', default: '' },
+    authSecret: { ref: 'AUTH_SECRET', default: 'jqE4YdBGILNOKsBJUKwyFkM3k99+ePINsVptlNEukPo=' },
     /** @description Auth0 - Github ID */
     authGithubId: { ref: 'AUTH_GITHUB_ID', default: '' },
     /** @description Auth0 - Github Secret */

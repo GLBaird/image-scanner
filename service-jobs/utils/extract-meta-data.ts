@@ -1,18 +1,28 @@
 import { ServerUnaryCall } from '@grpc/grpc-js';
 import getCorrId from './get-correlation-id';
-import { LoggerId, LoggerIdFactory } from '../logger';
+import { requireJwt } from './auth-helper';
+
+export class MissingCorrIdError extends Error {
+    constructor(message = 'missing correlation id') {
+        super(message);
+        Object.setPrototypeOf(this, new.target.prototype);
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(this, MissingCorrIdError);
+        }
+    }
+}
 
 export function extractMetaData<T, I>(
     call: ServerUnaryCall<T, I>,
-    methodName: string,
-    loggerMeta: LoggerIdFactory,
 ): {
     request: T;
     corrId: string | undefined;
-    logId: LoggerId;
+    claims: { sub: string; role: string };
 } {
     const { request } = call;
     const corrId = getCorrId(call.metadata);
-    const logId = loggerMeta(methodName, corrId);
-    return { request, corrId, logId };
+    if (!corrId) throw new MissingCorrIdError();
+    let claims = requireJwt(call);
+
+    return { request, corrId, claims };
 }

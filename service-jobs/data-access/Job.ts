@@ -1,3 +1,4 @@
+import { status } from '@grpc/grpc-js';
 import prisma from '../prisma/client';
 import { CreateNewJobReqest } from '../generated/jobmanager/CreateNewJobReqest';
 import ServiceError from '../utils/ServiceError';
@@ -12,10 +13,10 @@ import extractPageParamsFromRequest from '../utils/extract-page-params-from-requ
  * @param request
  * @returns id of job created
  */
-export async function createJob(request: CreateNewJobReqest): Promise<string> {
-    const { name, description, source, userId } = request;
+export async function createJob(request: CreateNewJobReqest, userId: string): Promise<string> {
+    const { name, description, source } = request;
     if (!name || !description || !source || !userId) {
-        throw new ServiceError('bad request', 400);
+        throw new ServiceError('bad request', status.CANCELLED);
     }
     const job = await prisma.job.create({
         data: {
@@ -64,7 +65,7 @@ export async function getAllJobsInProgress(request: GetJobsRequest): Promise<Job
  */
 export async function deleteJob(request: DeleteJobRequest) {
     if (!request.id || typeof request.id !== 'string') {
-        throw new ServiceError('bad request', 400);
+        throw new ServiceError('bad request', status.CANCELLED);
     }
     const { id } = request;
     await prisma.job.delete({ where: { id } });

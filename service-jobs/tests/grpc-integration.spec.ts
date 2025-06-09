@@ -1,6 +1,5 @@
 import * as assert from 'assert';
 import * as path from 'path';
-import { Metadata } from '@grpc/grpc-js';
 import { v4 as uuid } from 'uuid';
 import { JobManagerControllerClient } from '../generated/jobmanager/JobManagerController';
 import { Job } from '../generated/jobmanager/Job';
@@ -15,8 +14,11 @@ import { GetAvailableSourcesResponse } from '../generated/jobmanager/GetAvailabl
 import { SourceFiles, SourceFolders } from './helpers/source-data';
 import { StartScanningJobResponse } from '../generated/jobmanager/StartScanningJobResponse';
 import pause from './helpers/pause';
-import { response } from 'express';
 import { GetImagesResponse } from '../generated/jobmanager/GetImagesResponse';
+import { makeAuthMetadata, makeTestToken } from '../utils/auth-helper';
+import { GetDataResponse } from '../generated/jobmanager/GetDataResponse';
+import getMd5Hash from './helpers/md5';
+import { Metadata } from '@grpc/grpc-js';
 
 // global test data
 const userId = uuid();
@@ -96,13 +98,13 @@ describe('gRPC Integration Test', function () {
     });
 
     // Test data
-
     const name = 'test job';
     const description = 'test job description';
     const source = '/test';
 
     const correlationId = uuid();
-    const meta = new Metadata();
+    const token = makeTestToken(userId);
+    const meta = makeAuthMetadata(token);
     meta.set('x-correlation-id', correlationId);
 
     ///////////////////////////////////////////////////
@@ -129,14 +131,10 @@ describe('gRPC Integration Test', function () {
     it('should create a new job', async () => {
         const response = await new Promise<CreateNewJobResponse__Output | undefined>(
             (resolve, reject) => {
-                client.createNewJob(
-                    { name, description, source, userId },
-                    meta,
-                    (err, response) => {
-                        if (err) reject(err);
-                        else resolve(response);
-                    },
-                );
+                client.createNewJob({ name, description, source }, meta, (err, response) => {
+                    if (err) reject(err);
+                    else resolve(response);
+                });
             },
         );
         assert(response);
@@ -451,7 +449,7 @@ describe('gRPC Integration Test', function () {
 
     it('should get image data for scanned jobs with jobIds', async () => {
         assert.equal(scannedJobIds.length, SourceFolders.length);
-        const promises = scannedJobIds.map(async (jobId, index) => {
+        const promises = scannedJobIds.map(async (jobId) => {
             const response = await new Promise<GetImagesResponse | undefined>((resolve, reject) => {
                 client.getImages({ jobId }, meta, (err, resp) => {
                     if (err) reject(err);
@@ -459,19 +457,58 @@ describe('gRPC Integration Test', function () {
                 });
             });
 
-            const source = SourceFolders[index];
-            const expectedImages = SourceFiles[source] as string[];
-            assert(expectedImages);
-
             assert(response);
             assert.equal(response.errors, undefined);
             assert(response.images?.values);
+
+            const job = await prisma.job.findUnique({ where: { id: jobId } });
+            assert(job);
+
+            const expectedImages = SourceFiles[job.source] as string[];
+            assert(expectedImages);
 
             assert.equal(response.images.values.length, expectedImages.length);
             response.images.values.forEach((image) => {
                 assert(image.filename);
                 assert(expectedImages.includes(image.filename));
             });
+        });
+
+        await Promise.all(promises);
+    });
+
+    // helper to stream data from gRPC client
+    const getData = async (filepath: string): Promise<Buffer> => {
+        return await new Promise((resolve, reject) => {
+            const stream = client.getData({ filepath }, meta);
+            const buffer: Buffer[] = [];
+            stream.on('data', (response: GetDataResponse) => {
+                const chunk = response.data as Buffer;
+                if (chunk) {
+                    buffer.push(chunk);
+                }
+            });
+            stream.on('end', () => {
+                const completeBuffer = Buffer.concat(buffer);
+                resolve(completeBuffer);
+            });
+            stream.on('error', (err) => {
+                reject(err);
+            });
+        });
+    };
+
+    it('should stream image data for a job', async () => {
+        const promises = scannedJobIds.map(async (jobId) => {
+            const images = await prisma.image.findMany({ where: { jobIds: { has: jobId } } });
+            const imagePromises = images.map(async ({ source, md5 }) => {
+                const data = await getData(source);
+                assert(data);
+                const hashedData = getMd5Hash(data);
+                assert.equal(hashedData, md5);
+            });
+
+            await Promise.all(imagePromises);
         });
 
         await Promise.all(promises);

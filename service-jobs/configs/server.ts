@@ -19,10 +19,14 @@ const config = {
         dbName: process.env.DB_NAME || 'ecosystem_data',
         config: process.env.DB_CONFIG || '?authSource=admin',
     },
+    auth: {
+        secret: process.env.AUTH_SECRET || 'jqE4YdBGILNOKsBJUKwyFkM3k99+ePINsVptlNEukPo=',
+    },
     rabbitMq: {
         host: process.env.RABBIT_MQ_HOST || 'amqp://localhost',
         channel: process.env.RABBIT_MQ_CHANNEL || 'EcoV2SourceService',
-        ingestControllerChannel: process.env.RABBIT_MQ_INGEST_CONTROLLER_CHANNEL || 'EcoV2JobManager',
+        ingestControllerChannel:
+            process.env.RABBIT_MQ_INGEST_CONTROLLER_CHANNEL || 'EcoV2JobManager',
     },
     fileScan: {
         minFileSize: Number.parseInt(process.env.FILESCAN_MIN_FILESIZE || '100', 10),

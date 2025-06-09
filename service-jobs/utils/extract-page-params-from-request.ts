@@ -1,3 +1,4 @@
+import { status } from '@grpc/grpc-js';
 import { Order } from '../generated/jobmanager/Order';
 import ServiceError from './ServiceError';
 
@@ -15,10 +16,10 @@ function extractPageParamsFromRequest(request: {
     const order = request.order === Order.DESC ? 'desc' : 'asc';
 
     if (items <= 0) {
-        throw new ServiceError('bad request', 400);
+        throw new ServiceError('bad request', status.CANCELLED);
     }
     if (items > 2000) {
-        throw new ServiceError('bad request - batch size too large', 400);
+        throw new ServiceError('bad request - batch size too large', status.CANCELLED);
     }
     return { items, cursor, order };
 }
