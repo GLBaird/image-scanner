@@ -15,6 +15,8 @@ import { GetAvailableSourcesResponse } from '../generated/jobmanager/GetAvailabl
 import { SourceFiles, SourceFolders } from './helpers/source-data';
 import { StartScanningJobResponse } from '../generated/jobmanager/StartScanningJobResponse';
 import pause from './helpers/pause';
+import { response } from 'express';
+import { GetImagesResponse } from '../generated/jobmanager/GetImagesResponse';
 
 // global test data
 const userId = uuid();
@@ -381,8 +383,10 @@ describe('gRPC Integration Test', function () {
         );
     });
 
+    const scannedJobIds: string[] = [];
+
     it('it should scan selected source volume and produce correct data on the database.', async () => {
-        const promises = ['source1'].map(async (source) => {
+        const promises = SourceFolders.map(async (source) => {
             const { id: jobId } = await prisma.job.create({
                 data: {
                     name: `source ${source}`,
@@ -391,6 +395,7 @@ describe('gRPC Integration Test', function () {
                     userId,
                 },
             });
+            scannedJobIds.push(jobId);
             const startScanningJob = () =>
                 new Promise<StartScanningJobResponse | undefined>((resolve, reject) =>
                     client.startScanningJob({ id: jobId }, meta, (err, resp) => {
@@ -438,6 +443,34 @@ describe('gRPC Integration Test', function () {
                 // TODO: check Face data
 
                 // TODO: check classification
+            });
+        });
+
+        await Promise.all(promises);
+    });
+
+    it('should get image data for scanned jobs with jobIds', async () => {
+        assert.equal(scannedJobIds.length, SourceFolders.length);
+        const promises = scannedJobIds.map(async (jobId, index) => {
+            const response = await new Promise<GetImagesResponse | undefined>((resolve, reject) => {
+                client.getImages({ jobId }, meta, (err, resp) => {
+                    if (err) reject(err);
+                    else resolve(resp);
+                });
+            });
+
+            const source = SourceFolders[index];
+            const expectedImages = SourceFiles[source] as string[];
+            assert(expectedImages);
+
+            assert(response);
+            assert.equal(response.errors, undefined);
+            assert(response.images?.values);
+
+            assert.equal(response.images.values.length, expectedImages.length);
+            response.images.values.forEach((image) => {
+                assert(image.filename);
+                assert(expectedImages.includes(image.filename));
             });
         });
 

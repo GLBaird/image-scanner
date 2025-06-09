@@ -105,6 +105,14 @@ export type imageInfo = {
     pngs: number;
 };
 
+/**
+ * Updates the progres of a job, and returns new job record, or null if could not update
+ * @param jobId             Id of job to update
+ * @param inProgress        is job scanning and data extraction still in progress
+ * @param scanned           is file scanning completed - default false
+ * @param info              optional object to pass file info if scanning has been completed
+ * @returns
+ */
 export async function updateJobProgress(
     jobId: string,
     inProgress: boolean,
@@ -121,7 +129,6 @@ export async function updateJobProgress(
         }),
     };
     try {
-        console.log('UPDATE JOB', jobId, data);
         return await prisma.job.update({ where: { id: jobId }, data });
     } catch (err) {
         logger.error(`failed to update job: ${jobId} - ${err}`, { id: 'RunScanJobs' });
