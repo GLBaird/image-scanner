@@ -10,6 +10,7 @@ export type JobProgress = {
     images: number;
     jpegs: number;
     pngs: number;
+    errors: string[];
 };
 
 export type StageProgress = {
@@ -17,6 +18,7 @@ export type StageProgress = {
     info: string;
     progress: number;
     total: number;
+    errors: string[];
 };
 
 /**
@@ -67,6 +69,15 @@ class ProgressStore {
     }
 
     /**
+     * get access to progress info for a job's scan
+     * @param jobId
+     * @returns
+     */
+    public getScanProgress(jobId: string): JobProgress | undefined {
+        return this.jobProgress.get(jobId);
+    }
+
+    /**
      * Returns bool if the store is currently issuing updates
      * @returns
      */
@@ -108,10 +119,7 @@ class ProgressStore {
      */
     public startUpdates() {
         if (this.isUpdating()) return;
-        this.timerRef = setInterval(
-            this.sendUpdates.bind(this),
-            this.updateInterval,
-        );
+        this.timerRef = setInterval(this.sendUpdates.bind(this), this.updateInterval);
     }
 
     /**
@@ -137,9 +145,7 @@ class ProgressStore {
                 const jobProgress = this.jobProgress.get(jobId);
                 if (jobProgress === undefined) return undefined;
                 const stageProgress = [...this.stages]
-                    .map((stage) =>
-                        this.stageProgress.get(this.makeStageRef(jobId, stage)),
-                    )
+                    .map((stage) => this.stageProgress.get(this.makeStageRef(jobId, stage)))
                     .filter((progress) => progress !== undefined);
                 return {
                     id: jobId,
@@ -151,10 +157,7 @@ class ProgressStore {
             })
             .filter((update) => update !== undefined);
         updates.forEach((info) =>
-            ProgressUpdatesController.get().sendProgressUpdate(
-                info.update,
-                info.id,
-            ),
+            ProgressUpdatesController.get().sendProgressUpdate(info.update, info.id),
         );
     }
 
@@ -175,6 +178,7 @@ class ProgressStore {
             images: 0,
             jpegs: 0,
             pngs: 0,
+            errors: [],
         });
     }
 
@@ -193,10 +197,7 @@ class ProgressStore {
      */
     private updateIdleTimer() {
         if (this.idleRef) clearTimeout(this.idleRef);
-        this.idleRef = setTimeout(
-            this.stopUpdates.bind(this),
-            this.idleInterval,
-        );
+        this.idleRef = setTimeout(this.stopUpdates.bind(this), this.idleInterval);
     }
 
     /**
@@ -235,6 +236,19 @@ class ProgressStore {
     }
 
     /**
+     * Register error during readdir scan stage
+     * @param jobId
+     * @param error
+     * @returns
+     */
+    public registerFileScanError(jobId: string, error: string) {
+        let progress = this.jobProgress.get(jobId);
+        if (!progress) return;
+        progress.errors.push(error);
+        this.updateIdleTimer();
+    }
+
+    /**
      * Marks filescan for job as completed if not marking scan completed
      * via updatgesForFileScan.
      * @param jobId
@@ -258,6 +272,7 @@ class ProgressStore {
             info: 'scan pending...',
             progress: 0,
             total: count,
+            errors: [],
         });
         this.incrementJobTasks(jobId, count);
     }
@@ -270,24 +285,12 @@ class ProgressStore {
      * @param filepath File currently being processed.
      * @returns True if all tasks for job have been completed.
      */
-    public updateForStage(
-        jobId: string,
-        stage: string,
-        filepath: string,
-    ): boolean {
-        let stageProgress = this.stageProgress.get(
-            this.makeStageRef(jobId, stage),
-        );
+    public updateForStage(jobId: string, stage: string, filepath: string): boolean {
+        let stageProgress = this.stageProgress.get(this.makeStageRef(jobId, stage));
         if (!stageProgress) {
             // if stage data missing, getnumber of images or fictional number to show some progress in the UI
-            this.startNewStage(
-                jobId,
-                stage,
-                this.jobProgress.get(jobId)?.images ?? 10000,
-            );
-            stageProgress = this.stageProgress.get(
-                this.makeStageRef(jobId, stage),
-            )!;
+            this.startNewStage(jobId, stage, this.jobProgress.get(jobId)?.images ?? 10000);
+            stageProgress = this.stageProgress.get(this.makeStageRef(jobId, stage))!;
         }
         stageProgress.info = filepath;
         stageProgress.progress += 1;
@@ -298,6 +301,20 @@ class ProgressStore {
     }
 
     /**
+     * Register error during stage process
+     * @param jobId
+     * @param stage
+     * @param error
+     * @returns
+     */
+    public registerStageError(jobId: string, stage: string, error: string) {
+        let stageProgress = this.stageProgress.get(this.makeStageRef(jobId, stage));
+        if (!stageProgress) return;
+        stageProgress.errors.push(error);
+        this.updateIdleTimer();
+    }
+
+    /**
      * Will remove all progress data for a job and stop updates if no more progress is available.
      * Updates will also stop if progress is idle for 30s.
      * @param jobId
@@ -305,9 +322,7 @@ class ProgressStore {
     public removeJob(jobId: string) {
         this.jobs.delete(jobId);
         this.jobProgress.delete(jobId);
-        this.stages.forEach((stage) =>
-            this.stageProgress.delete(this.makeStageRef(jobId, stage)),
-        );
+        this.stages.forEach((stage) => this.stageProgress.delete(this.makeStageRef(jobId, stage)));
         this.jobProgress.delete(jobId);
         if (this.jobs.size === 0) {
             this.stopUpdates();

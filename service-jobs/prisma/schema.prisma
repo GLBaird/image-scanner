@@ -31,15 +31,20 @@ model Job {
 
 model Image {
     id             String          @id @default(cuid())
+    filename       String
     mimetype       String
-    filesize       Int
+    filesize       Float
     width          Int
     height         Int
+    format         String
+    colorspace     String
+    resolution     String
+    depth          Int
     source         String
     createdAt      DateTime        @default(now())
     md5            String          @unique
-    sha1           String
-    jobIds         String[]
+    sha1           String          @unique
+    jobIds         String[]        @default([])
     exifData       ExifData?
     classification Classification?
     faces          Face[]

@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import * as path from 'path';
 import { Metadata } from '@grpc/grpc-js';
 import { v4 as uuid } from 'uuid';
 import { JobManagerControllerClient } from '../generated/jobmanager/JobManagerController';
@@ -9,7 +10,11 @@ import { CreateNewJobResponse__Output } from '../generated/jobmanager/CreateNewJ
 import { GetJobsResponse__Output } from '../generated/jobmanager/GetJobsResponse';
 import { notSuperset } from './helpers/set-comparisons';
 import { fromTimestamp } from '../utils/timestamp';
-import { DeleteJobResponse__Output } from '../generated/jobmanager/DeleteJobResponse';
+import { DeleteJobResponse } from '../generated/jobmanager/DeleteJobResponse';
+import { GetAvailableSourcesResponse } from '../generated/jobmanager/GetAvailableSourcesResponse';
+import { SourceFiles, SourceFolders } from './helpers/source-data';
+import { StartScanningJobResponse } from '../generated/jobmanager/StartScanningJobResponse';
+import pause from './helpers/pause';
 
 // global test data
 const userId = uuid();
@@ -41,11 +46,7 @@ async function createJobs(
     await prisma.job.createMany({ data: jobs });
 }
 
-function assertJobData(
-    data: unknown,
-    scanned: boolean = false,
-    inProgress: boolean = false,
-) {
+function assertJobData(data: unknown, scanned: boolean = false, inProgress: boolean = false) {
     assert(typeof data === 'object');
     const job = data as Job;
     assert(job.id);
@@ -61,10 +62,7 @@ function assertJobData(
     assert(job.createdAt);
     const today = new Date().toISOString().split('T').shift();
     // handle values from DB or gRPC Query -- Date or Timestamp
-    const createdAt =
-        job.createdAt instanceof Date
-            ? job.createdAt
-            : fromTimestamp(job.createdAt);
+    const createdAt = job.createdAt instanceof Date ? job.createdAt : fromTimestamp(job.createdAt);
     const ca = createdAt.toISOString().split('T').shift();
     assert.equal(ca, today);
 }
@@ -78,6 +76,11 @@ describe('gRPC Integration Test', function () {
     let client: JobManagerControllerClient;
 
     before(async () => {
+        // check clean DB
+        const jCount = await prisma.job.count();
+        const iCount = await prisma.image.count();
+        if (jCount > 0 || iCount > 0)
+            throw new Error('Should be a clean DB for tests!! Will erase all data...');
         console.log('setting up connections');
         client = await getTestClient();
         await createJobs(userId, imageCount);
@@ -122,18 +125,18 @@ describe('gRPC Integration Test', function () {
     ///////////////////////////////////////////////////
 
     it('should create a new job', async () => {
-        const response = await new Promise<
-            CreateNewJobResponse__Output | undefined
-        >((resolve, reject) => {
-            client.createNewJob(
-                { name, description, source, userId },
-                meta,
-                (err, response) => {
-                    if (err) reject(err);
-                    else resolve(response);
-                },
-            );
-        });
+        const response = await new Promise<CreateNewJobResponse__Output | undefined>(
+            (resolve, reject) => {
+                client.createNewJob(
+                    { name, description, source, userId },
+                    meta,
+                    (err, response) => {
+                        if (err) reject(err);
+                        else resolve(response);
+                    },
+                );
+            },
+        );
         assert(response);
         assert.equal(response.errors, undefined);
         assert(response.id);
@@ -181,18 +184,12 @@ describe('gRPC Integration Test', function () {
         assert.equal(response2.errors, undefined);
         assert.equal(response2.jobs?.values?.length, 50);
         const firstBatchIds = new Set(response1.jobs?.values?.map((j) => j.id));
-        const secondBatchIds = new Set(
-            response2.jobs?.values?.map((j) => j.id),
-        );
+        const secondBatchIds = new Set(response2.jobs?.values?.map((j) => j.id));
         assert(notSuperset(firstBatchIds, secondBatchIds));
     });
 
     it('should get jobs in progress', async () => {
-        let response = await getJobsFromGrpc(
-            imageCount,
-            '',
-            'getAllJobsInProgress',
-        );
+        let response = await getJobsFromGrpc(imageCount, '', 'getAllJobsInProgress');
 
         assert(response);
         assert.equal(response.errors, undefined);
@@ -203,11 +200,7 @@ describe('gRPC Integration Test', function () {
         await createJobs(userId, 50, false, true);
         await createJobs(userId, 10, true, true);
 
-        response = await getJobsFromGrpc(
-            imageCount,
-            '',
-            'getAllJobsInProgress',
-        );
+        response = await getJobsFromGrpc(imageCount, '', 'getAllJobsInProgress');
         assert(response);
         assert.equal(response.errors, undefined);
         jobsInProgressCount = response.jobs?.values?.length ?? 0;
@@ -223,10 +216,7 @@ describe('gRPC Integration Test', function () {
         );
         assert(response2);
         assert.equal(response2.errors, undefined);
-        assert.equal(
-            response2.jobs?.values?.length ?? 0,
-            jobsInProgressCount / 2,
-        );
+        assert.equal(response2.jobs?.values?.length ?? 0, jobsInProgressCount / 2);
         response2.jobs?.values?.forEach((job) => assert(job.inProgress));
         const finalId = response2.jobs?.values?.slice(-1).pop()?.id;
         assert(finalId);
@@ -238,10 +228,7 @@ describe('gRPC Integration Test', function () {
         );
         assert(response3);
         assert.equal(response2.errors, undefined);
-        assert.equal(
-            response3.jobs?.values?.length ?? 0,
-            jobsInProgressCount / 2,
-        );
+        assert.equal(response3.jobs?.values?.length ?? 0, jobsInProgressCount / 2);
         response3.jobs?.values?.forEach((job) => assert(job.inProgress));
     });
 
@@ -262,20 +249,27 @@ describe('gRPC Integration Test', function () {
             },
         });
         const baseImage = {
-            sha1: 'sha1',
+            filename: 'simple-image.jpg',
+            source: '/source/simple-image.jpg',
             filesize: 100,
             width: 100,
             height: 100,
             mimetype: 'image/jpeg',
+            format: 'format',
+            colorspace: 'rgb',
+            resolution: '72dpi',
+            depth: 8,
         };
 
         const md5 = 'image1-md5';
+        const sha1 = 'image1-sha1';
 
         const image1 = await prisma.image.create({
             data: {
                 ...baseImage,
                 jobIds: [jobId],
                 md5,
+                sha1,
             },
         });
 
@@ -284,6 +278,7 @@ describe('gRPC Integration Test', function () {
                 ...baseImage,
                 jobIds: ['different', jobId],
                 md5: 'image2-md5',
+                sha1: 'image2-sha1',
             },
         });
 
@@ -292,6 +287,7 @@ describe('gRPC Integration Test', function () {
                 ...baseImage,
                 jobIds: ['different'],
                 md5: 'image3-md5',
+                sha1: 'image3-sha1',
             },
         });
 
@@ -322,9 +318,7 @@ describe('gRPC Integration Test', function () {
 
         // should delete only image1, but delete all cascading data to objects grouped via md5
 
-        const response = await new Promise<
-            DeleteJobResponse__Output | undefined
-        >((resolve, reject) => {
+        const response = await new Promise<DeleteJobResponse | undefined>((resolve, reject) => {
             client.deleteJobAndAllData({ id: jobId }, meta, (err, resp) => {
                 if (err) reject(err);
                 else resolve(resp);
@@ -362,5 +356,91 @@ describe('gRPC Integration Test', function () {
             where: { id: image3.id },
         });
         assert.equal(checkImage3, 1);
+    });
+
+    it('should get available sources from within source folder', async () => {
+        const response = await new Promise<GetAvailableSourcesResponse | undefined>(
+            (resolve, reject) => {
+                client.getAvailableSources({}, meta, (err, resp) => {
+                    if (err) reject(err);
+                    else resolve(resp);
+                });
+            },
+        );
+        assert(response);
+        assert.equal(response.errors, undefined);
+        assert(response.sources?.values);
+        response.sources.values.forEach((v) => {
+            assert(v.name);
+            assert(v.createdAt);
+            assert(v.modifiedAt);
+        });
+        assert.deepStrictEqual(
+            response.sources.values.map((v) => v.name),
+            SourceFolders,
+        );
+    });
+
+    it('it should scan selected source volume and produce correct data on the database.', async () => {
+        const promises = ['source1'].map(async (source) => {
+            const { id: jobId } = await prisma.job.create({
+                data: {
+                    name: `source ${source}`,
+                    description: `testing scanning source: ${source}`,
+                    source,
+                    userId,
+                },
+            });
+            const startScanningJob = () =>
+                new Promise<StartScanningJobResponse | undefined>((resolve, reject) =>
+                    client.startScanningJob({ id: jobId }, meta, (err, resp) => {
+                        if (err) reject(err);
+                        else resolve(resp);
+                    }),
+                );
+            type expectedState = 'started' | 'in-progress' | 'completed';
+            const response = await startScanningJob();
+            assert(response);
+            assert.equal(response.errors, undefined);
+            assert((response.state as expectedState) === 'started');
+
+            // wait for job to complete as images are batched in 1 second bursts
+            await pause(1500);
+
+            // check generated data is what's expected
+            const images = await prisma.image.findMany({ where: { jobIds: { has: jobId } } });
+            const expectedImages = SourceFiles[source] as string[];
+            assert.equal(images.length, expectedImages.length);
+            const md5s = new Set();
+            images.forEach((image) => {
+                assert(expectedImages.find((filename) => filename === image.filename));
+                // check has unique md5
+                assert(image.md5 && !md5s.has(image.md5));
+                md5s.add(image.md5);
+                assert(image.filesize > 0);
+                assert(image.width > 0);
+                assert(image.height > 0);
+                assert(image.colorspace);
+                assert(image.resolution);
+                assert(image.depth);
+                assert(image.format);
+                assert.equal(
+                    image.mimetype,
+                    image.filename.endsWith('.png') ? 'image/png' : 'image/jpeg',
+                );
+                assert.equal(image.jobIds.length, 1);
+                assert.equal(image.jobIds[0], jobId);
+                assert(image.createdAt);
+                assert.equal(image.source, '/' + path.join(source, image.filename));
+
+                // TODO: check EXIF data
+
+                // TODO: check Face data
+
+                // TODO: check classification
+            });
+        });
+
+        await Promise.all(promises);
     });
 });

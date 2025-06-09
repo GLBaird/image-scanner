@@ -1,17 +1,14 @@
-import { Metadata } from '@grpc/grpc-js';
 import { JobManagerControllerHandlers } from '../generated/jobmanager/JobManagerController';
 import logger, { getLoggerMetaFactory } from '../logger';
-import ServiceError from '../utils/ServiceError';
-import {
-    createJob,
-    deleteJob,
-    getAllJobs,
-    getAllJobsInProgress,
-} from '../data-access/Job';
+import { createJob, deleteJob, getAllJobs, getAllJobsInProgress } from '../data-access/Job';
 import { toTimestamp } from '../utils/timestamp';
 import { Job } from '../generated/jobmanager/Job';
 import ProgressStore from '../data-access/ProgressStore';
-import getCorrId from '../utils/get-correlation-id';
+import { handleServiceError } from '../utils/handle-service-error';
+import { handleMissingCorrId } from '../utils/handle-missing-correlation-id';
+import SourceController from './SourceController';
+import { extractMetaData } from '../utils/extract-meta-data';
+import runScanJob from './RunScanJob';
 
 const loggerMeta = getLoggerMetaFactory('JobManagerController');
 
@@ -20,35 +17,19 @@ const loggerMeta = getLoggerMetaFactory('JobManagerController');
  */
 const JobManagerController: JobManagerControllerHandlers = {
     createNewJob: async (call, callback) => {
-        const { request } = call;
-        const corrId = getCorrId(call.metadata);
-        const logId = loggerMeta('createNewJob', corrId);
-
-        if (!corrId) {
-            logger.info('bad request', logId);
-            return callback(new ServiceError('bad request', 400));
-        }
+        const { request, corrId, logId } = extractMetaData(call, 'createNewJob', loggerMeta);
+        if (!corrId) handleMissingCorrId(callback, logId);
         try {
             const id = await createJob(request);
             callback(null, { id });
             logger.info(`created new job: ${id}`, logId);
         } catch (error) {
-            logger.error(`error creating new job: ${error}`, logId);
-            if (error instanceof ServiceError) {
-                callback(error);
-            } else {
-                callback(new ServiceError(`error creating job: ${error}`, 500));
-            }
+            handleServiceError(error, 'creating new jobs', callback, logId);
         }
     },
     getAllJobs: async (call, callback) => {
-        const { request } = call;
-        const corrId = getCorrId(call.metadata);
-        const logId = loggerMeta('getAllJobs', corrId);
-        if (!corrId) {
-            logger.info('bad request', logId);
-            return callback(new ServiceError('bad request', 400));
-        }
+        const { request, corrId, logId } = extractMetaData(call, 'getAllJobs', loggerMeta);
+        if (!corrId) handleMissingCorrId(callback, logId);
         try {
             const jobs = (await getAllJobs(request)).map((j) => ({
                 ...j,
@@ -57,22 +38,16 @@ const JobManagerController: JobManagerControllerHandlers = {
             callback(null, { jobs: { values: jobs } });
             logger.info('get all jobs', logId);
         } catch (error) {
-            logger.error(`error getting jobs: ${error}`, logId);
-            if (error instanceof ServiceError) {
-                callback(error);
-            } else {
-                callback(new ServiceError(`error getting jobs: ${error}`, 500));
-            }
+            handleServiceError(error, 'getting all jobs', callback, logId);
         }
     },
     getAllJobsInProgress: async (call, callback) => {
-        const { request } = call;
-        const corrId = getCorrId(call.metadata);
-        const logId = loggerMeta('getAllJobsInProgress', corrId);
-        if (!corrId) {
-            logger.info('bad request', logId);
-            return callback(new ServiceError('bad request', 400));
-        }
+        const { request, corrId, logId } = extractMetaData(
+            call,
+            'getAllJobsInProgress',
+            loggerMeta,
+        );
+        if (!corrId) handleMissingCorrId(callback, logId);
         try {
             const jobs = (await getAllJobsInProgress(request)).map((j) => ({
                 ...j,
@@ -81,53 +56,40 @@ const JobManagerController: JobManagerControllerHandlers = {
             callback(null, { jobs: { values: jobs } });
             logger.info('get all jobs in progress', logId);
         } catch (error) {
-            logger.error(`error getting jobs in progress: ${error}`, logId);
-            if (error instanceof ServiceError) {
-                callback(error);
-            } else {
-                callback(
-                    new ServiceError(
-                        `error getting jobs in progress: ${error}`,
-                        500,
-                    ),
-                );
-            }
+            handleServiceError(error, 'getting jobs in progress', callback, logId);
         }
     },
     deleteJobAndAllData: async (call, callback) => {
-        const { request } = call;
-        const corrId = getCorrId(call.metadata);
-        const logId = loggerMeta('getAllJobsInProgress', corrId);
-        if (!corrId) {
-            logger.info('bad request', logId);
-            return callback(new ServiceError('bad request', 400));
-        }
+        const { request, corrId, logId } = extractMetaData(call, 'deleteJobAndAllData', loggerMeta);
+        if (!corrId) handleMissingCorrId(callback, logId);
         try {
             await deleteJob(request);
             callback(null, { success: true });
             logger.info(`delete job and related data: ${request.id}`, logId);
         } catch (error) {
-            logger.error(
-                `error deleting a job and related data: ${error}`,
-                logId,
-            );
-            if (error instanceof ServiceError) {
-                callback(error);
-            } else {
-                callback(
-                    new ServiceError(
-                        `error deleting a job and related data: ${error}`,
-                        500,
-                    ),
-                );
-            }
+            handleServiceError(error, 'deleting a job and related data', callback, logId);
         }
     },
     getAvailableSources: async (call, callback) => {
-        const { request } = call;
+        const { corrId, logId } = extractMetaData(call, 'getAvailableSources', loggerMeta);
+        if (!corrId) handleMissingCorrId(callback, logId);
+        try {
+            const sources = await SourceController.getSources();
+            callback(null, { sources: { values: sources } });
+            logger.info('getting available sources', logId);
+        } catch (error) {
+            handleServiceError(error, 'getting available sources', callback, logId);
+        }
     },
     startScanningJob: async (call, callback) => {
-        const { request } = call;
+        const { request, corrId, logId } = extractMetaData(call, 'startScanningJob', loggerMeta);
+        if (!corrId) handleMissingCorrId(callback, logId);
+        try {
+            logger.info(`start running scan for job: ${request.id}`, logId);
+            await runScanJob(request, callback, corrId!);
+        } catch (error) {
+            handleServiceError(error, `start scanning for job: ${request.id}`, callback, logId);
+        }
     },
 };
 

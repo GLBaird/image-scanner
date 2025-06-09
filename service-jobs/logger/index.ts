@@ -23,7 +23,10 @@ const logger = createLogger({
     ],
 });
 
-export function getLoggerMetaFactory(name: string) {
+export type LoggerId = { id: string; corrId?: string };
+export type LoggerIdFactory = (methods: string, corrId?: string) => LoggerId;
+
+export function getLoggerMetaFactory(name: string): LoggerIdFactory {
     return (method: string, corrId: string = '') => ({
         id: `${name}/${method}`,
         corrId,

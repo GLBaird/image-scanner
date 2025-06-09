@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Image" ALTER COLUMN "filesize" SET DATA TYPE DOUBLE PRECISION;

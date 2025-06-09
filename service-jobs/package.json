@@ -9,7 +9,7 @@
     "dev": "nodemon service.ts",
     "build": "tsc",
     "test": "mocha --require ts-node/register tests/**/*.spec.ts"
-    },
+  },
   "keywords": [],
   "author": "leonbaird@mac.com",
   "license": "ISC",
@@ -33,6 +33,7 @@
   "dependencies": {
     "@prisma/client": "6.9.0",
     "dotenv": "^16.5.0",
+    "imagemagick": "^0.1.3",
     "readdir-enhanced": "^6.0.4",
     "uuid": "^11.1.0",
     "winston": "^3.17.0"

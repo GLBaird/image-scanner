@@ -5,6 +5,7 @@ import { Job } from '../generated/prisma';
 import { GetJobsRequest } from '../generated/jobmanager/GetJobsRequest';
 import { Order } from '../generated/jobmanager/Order';
 import { DeleteJobRequest } from '../generated/jobmanager/DeleteJobRequest';
+import logger from '../logger';
 
 /**
  * Creates new job from request data and returns id
@@ -65,11 +66,8 @@ export async function getAllJobs(request: GetJobsRequest): Promise<Job[]> {
  * @param request
  * @returns
  */
-export async function getAllJobsInProgress(
-    request: GetJobsRequest,
-): Promise<Job[]> {
+export async function getAllJobsInProgress(request: GetJobsRequest): Promise<Job[]> {
     const { cursor, items, order } = extractParamsFromGetJobRequest(request);
-    console.log('twats', cursor, items, order);
     return await prisma.job.findMany({
         where: { inProgress: true, scanned: false },
         orderBy: { createdAt: order },
@@ -109,4 +107,42 @@ export async function deleteJob(request: DeleteJobRequest) {
             where: { jobIds: { equals: [] } },
         }),
     ]);
+}
+
+/**
+ * Get job specified with jobId from DB
+ * @param jobId
+ * @returns
+ */
+export async function getJob(jobId: string): Promise<Job | null> {
+    return await prisma.job.findUnique({ where: { id: jobId } });
+}
+
+export type imageInfo = {
+    jpegs: number;
+    pngs: number;
+};
+
+export async function updateJobProgress(
+    jobId: string,
+    inProgress: boolean,
+    scanned: boolean = false,
+    info?: imageInfo,
+): Promise<Job | null> {
+    const data = {
+        inProgress,
+        scanned,
+        ...(info !== undefined && {
+            images: info.jpegs + info.pngs,
+            jpegs: info.jpegs,
+            pngs: info.pngs,
+        }),
+    };
+    try {
+        console.log('UPDATE JOB', jobId, data);
+        return await prisma.job.update({ where: { id: jobId }, data });
+    } catch (err) {
+        logger.error(`failed to update job: ${jobId} - ${err}`, { id: 'RunScanJobs' });
+        return null;
+    }
 }
