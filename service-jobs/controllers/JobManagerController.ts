@@ -3,12 +3,13 @@ import logger, { getLoggerMetaFactory } from '../logger';
 import { createJob, deleteJob, getAllJobs, getAllJobsInProgress } from '../data-access/Job';
 import { toTimestamp } from '../utils/timestamp';
 import { Job } from '../generated/jobmanager/Job';
-import ProgressStore from '../data-access/ProgressStore';
 import { handleServiceError } from '../utils/handle-service-error';
 import { handleMissingCorrId } from '../utils/handle-missing-correlation-id';
 import SourceController from './SourceController';
 import { extractMetaData } from '../utils/extract-meta-data';
 import runScanJob from './RunScanJob';
+import { getImagesForJob } from '../data-access/Image';
+import { Image } from '../generated/jobmanager/Image';
 
 const loggerMeta = getLoggerMetaFactory('JobManagerController');
 
@@ -89,6 +90,30 @@ const JobManagerController: JobManagerControllerHandlers = {
             await runScanJob(request, callback, corrId!);
         } catch (error) {
             handleServiceError(error, `start scanning for job: ${request.id}`, callback, logId);
+        }
+    },
+    getImages: async (call, callback) => {
+        const { request, corrId, logId } = extractMetaData(call, 'getImages', loggerMeta);
+        if (!corrId) handleMissingCorrId(callback, logId);
+        try {
+            logger.info(`get images for job: ${request.jobId}`, logId);
+            const images = (await getImagesForJob(request)).map((i) => ({
+                ...i,
+                createdAt: toTimestamp(i.createdAt),
+                exifData: i.exifData?.exif ?? '',
+                faces:
+                    i.faces?.map((f) => ({
+                        hash: f.hash,
+                        x: f.coordX,
+                        y: f.coordY,
+                        width: f.width,
+                        height: f.height,
+                    })) ?? [],
+                tags: i.classification?.tags ?? [],
+            })) as Image[];
+            callback(null, { images: { values: images } });
+        } catch (error) {
+            handleServiceError(error, `get images for job: ${request.jobId}`, callback, logId);
         }
     },
 };

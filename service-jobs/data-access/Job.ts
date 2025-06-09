@@ -3,9 +3,9 @@ import { CreateNewJobReqest } from '../generated/jobmanager/CreateNewJobReqest';
 import ServiceError from '../utils/ServiceError';
 import { Job } from '../generated/prisma';
 import { GetJobsRequest } from '../generated/jobmanager/GetJobsRequest';
-import { Order } from '../generated/jobmanager/Order';
 import { DeleteJobRequest } from '../generated/jobmanager/DeleteJobRequest';
 import logger from '../logger';
+import extractPageParamsFromRequest from '../utils/extract-page-params-from-request';
 
 /**
  * Creates new job from request data and returns id
@@ -29,31 +29,13 @@ export async function createJob(request: CreateNewJobReqest): Promise<string> {
     return job.id;
 }
 
-function extractParamsFromGetJobRequest(request: GetJobsRequest): {
-    items: number;
-    cursor: string;
-    order: 'asc' | 'desc';
-} {
-    const items = typeof request.items === 'number' ? request.items : 200;
-    const cursor = request.cursor ?? '';
-    const order = request.order === Order.DESC ? 'desc' : 'asc';
-
-    if (items <= 0) {
-        throw new ServiceError('bad request', 400);
-    }
-    if (items > 2000) {
-        throw new ServiceError('bad request - batch size too large', 400);
-    }
-    return { items, cursor, order };
-}
-
 /**
  * Returns paged number of jobs using a cursor sorted by creation date
  * @param request
  * @returns
  */
 export async function getAllJobs(request: GetJobsRequest): Promise<Job[]> {
-    const { cursor, items, order } = extractParamsFromGetJobRequest(request);
+    const { cursor, items, order } = extractPageParamsFromRequest(request);
     return await prisma.job.findMany({
         orderBy: { createdAt: order },
         ...(cursor && { cursor: { id: cursor }, skip: 1 }),
@@ -67,7 +49,7 @@ export async function getAllJobs(request: GetJobsRequest): Promise<Job[]> {
  * @returns
  */
 export async function getAllJobsInProgress(request: GetJobsRequest): Promise<Job[]> {
-    const { cursor, items, order } = extractParamsFromGetJobRequest(request);
+    const { cursor, items, order } = extractPageParamsFromRequest(request);
     return await prisma.job.findMany({
         where: { inProgress: true, scanned: false },
         orderBy: { createdAt: order },

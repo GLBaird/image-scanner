@@ -1,5 +1,8 @@
+import { GetImagesRequest } from '../generated/jobmanager/GetImagesRequest';
 import logger from '../logger';
 import prisma from '../prisma/client';
+import ServiceError from '../utils/ServiceError';
+import extractPageParamsFromRequest from '../utils/extract-page-params-from-request';
 
 export type ImageData = {
     filename: string;
@@ -15,6 +18,14 @@ export type ImageData = {
     createdAt: Date;
     md5: string;
     sha1: string;
+};
+
+export type ExtendedImageData = ImageData & {
+    exifData?: { exif: string } | null;
+    classification?: { tags: string[] } | null;
+    faces?:
+        | { hash: string; coordX: number; coordY: number; width: number; height: Number }[]
+        | null;
 };
 
 /**
@@ -75,4 +86,21 @@ export async function getImageStatsForJob(jobId: string): Promise<{ pngs: number
         where: { jobIds: { has: jobId }, mimetype: { equals: 'image/png ' } },
     });
     return { jpegs, pngs };
+}
+
+/**
+ * process request to get paged image data for job
+ * @param request
+ */
+export async function getImagesForJob(request: GetImagesRequest): Promise<ExtendedImageData[]> {
+    const { jobId } = request;
+    if (!jobId) throw new ServiceError('bad request', 400);
+    const { items, cursor, order } = extractPageParamsFromRequest(request);
+    return await prisma.image.findMany({
+        where: { jobIds: { has: jobId } },
+        orderBy: { source: order },
+        ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+        take: items,
+        include: { exifData: true, faces: true, classification: true },
+    });
 }
