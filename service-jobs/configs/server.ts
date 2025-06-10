@@ -5,6 +5,10 @@ dotenv.config();
 
 const config = {
     port: process.env.PORT || 5042,
+    serverSideEventsPort: {
+        http: process.env.SERVER_SIDE_EVENTS_PORT_HTTP || '4042',
+        https: process.env.SERVER_SIDE_EVENTS_PORT_HTTPS || '4043',
+    },
     logger: {
         combinedLog: path.resolve(__dirname, '../logs/combined.log'),
         errorLog: path.resolve(__dirname, '../logs/error.log'),
@@ -21,6 +25,9 @@ const config = {
     },
     auth: {
         secret: process.env.AUTH_SECRET || 'jqE4YdBGILNOKsBJUKwyFkM3k99+ePINsVptlNEukPo=',
+    },
+    frontend: {
+        origin: 'http://localhost:3000',
     },
     rabbitMq: {
         host: process.env.RABBIT_MQ_HOST || 'amqp://localhost',

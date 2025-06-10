@@ -6,6 +6,7 @@ import JobManagerController from './controllers/JobManagerController';
 import config from './configs/server';
 import logger, { getLoggerMetaFactory } from './logger';
 import prisma from './prisma/client';
+import ServerSideEventEmitter from './controllers/ServerEventEmitter';
 
 const PROTO_FILE = './protos/service-jobs.proto';
 
@@ -35,6 +36,9 @@ function main() {
             logger.info(`gRPC service has started on port ${port}`, logMeta);
         },
     );
+
+    // start server side events emitter for ui updates
+    ServerSideEventEmitter.get().startServer();
 }
 
 // launch service and error catch to disconnect from prisma
