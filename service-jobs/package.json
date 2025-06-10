@@ -10,7 +10,7 @@
     "dev": "nodemon service.ts",
     "build": "tsc",
     "test": "mocha --require ts-node/register tests/**/*.spec.ts --exit",
-    "test2": "mocha --require ts-node/register tests/ServerEventEmitter.spec.ts --exit"
+    "test2": "mocha --require ts-node/register tests/UIUpdatesController.spec.ts --exit"
   },
   "keywords": [],
   "author": "leonbaird@mac.com",

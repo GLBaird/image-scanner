@@ -6,7 +6,8 @@ import JobManagerController from './controllers/JobManagerController';
 import config from './configs/server';
 import logger, { getLoggerMetaFactory } from './logger';
 import prisma from './prisma/client';
-import ServerSideEventEmitter from './controllers/ServerEventEmitter';
+import ServerSideEventEmitter from './controllers/ServerSideEventEmitter';
+import UIUpdatesController from './controllers/UIUpdatesController';
 
 const PROTO_FILE = './protos/service-jobs.proto';
 
@@ -20,7 +21,7 @@ function getServer() {
     return server;
 }
 
-const logMeta = getLoggerMetaFactory('/main')('');
+const logId = getLoggerMetaFactory('/main')('');
 
 function main() {
     // setup gRPC
@@ -30,21 +31,26 @@ function main() {
         grpc.ServerCredentials.createInsecure(),
         (err, port) => {
             if (err) {
-                logger.error(`failed to start grpc service: ${err}`, logMeta);
+                logger.error(`failed to start grpc service: ${err}`, logId);
                 process.exit(1);
             }
-            logger.info(`gRPC service has started on port ${port}`, logMeta);
+            logger.info(`gRPC service has started on port ${port}`, logId);
         },
     );
 
     // start server side events emitter for ui updates
     ServerSideEventEmitter.get().startServer();
+
+    // ensure UI updates are loaded and ready
+    const uuc = UIUpdatesController.get();
+    if (uuc.serviceReady()) logger.info('UI Updates ready.', logId);
+    else logger.error('UI updates have failed to initialise!', logId);
 }
 
 // launch service and error catch to disconnect from prisma
 try {
     main();
 } catch (error) {
-    logger.error(`service error: ${error}`, logMeta);
+    logger.error(`service error: ${error}`, logId);
     prisma.$disconnect().then(() => process.exit(1));
 }

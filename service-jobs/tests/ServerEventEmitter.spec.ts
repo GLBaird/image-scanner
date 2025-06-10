@@ -3,7 +3,7 @@ import * as assert from 'assert';
 import { request as httpRequest } from 'http';
 import { once } from 'events';
 import { EventSource } from 'eventsource';
-import ServerSideEventEmitter from '../controllers/ServerEventEmitter';
+import ServerSideEventEmitter from '../controllers/ServerSideEventEmitter';
 
 describe('Test server Event Emitter', function () {
     this.timeout(5000);

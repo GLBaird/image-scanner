@@ -23,24 +23,28 @@ export type ServerSideEventListener = (jobId: string, event: 'open' | 'close') =
 class ServerSideEventEmitter {
     private static shared: ServerSideEventEmitter = new ServerSideEventEmitter();
     private app = express();
-    private http?: HttpServer<typeof IncomingMessage, typeof ServerResponse>;
-    private https?: HttpsServer<typeof IncomingMessage, typeof ServerResponse>;
+    private http: HttpServer<typeof IncomingMessage, typeof ServerResponse>;
+    private https: HttpsServer<typeof IncomingMessage, typeof ServerResponse>;
     private sockets = new Set<Socket>();
     private bus = new EventEmitter();
+    private running = false;
 
     private eventListeners: Set<ServerSideEventListener> = new Set();
 
     public addEventListener(listener: ServerSideEventListener) {
+        logger.debug(`adding event listener ${listener.name}`, makeLogId('addEventListener'));
         this.eventListeners.add(listener);
     }
 
     public removeEventListener(listener: ServerSideEventListener) {
+        logger.debug(`removing event listener ${listener.name}`, makeLogId('removeEventListener'));
         if (this.eventListeners.has(listener)) {
             this.eventListeners.delete(listener);
         }
     }
 
     public sendMessage(jobId: string, data: any) {
+        logger.debug(`sending message ${jobId}L ${data}`, makeLogId('sendMessage'));
         this.bus.emit('message', { jobId, data });
     }
 
@@ -94,6 +98,7 @@ class ServerSideEventEmitter {
             };
             this.bus.on('message', onMessage);
 
+            logger.debug(`sending message to listeners: ${this.eventListeners}`, logId);
             this.eventListeners.forEach((listener) => listener(jobId, 'open'));
 
             // tidy up when the client goes away
@@ -103,21 +108,6 @@ class ServerSideEventEmitter {
                 this.eventListeners.forEach((listener) => listener(jobId, 'close'));
             });
         });
-
-        logger.info('server read for SSE emitting', logId);
-    }
-
-    /**
-     * Starts server for sending events
-     */
-    startServer() {
-        const logId = makeLogId('startServer');
-        logger.info('starting Server Side Events Emitter for UI updates');
-
-        if (this.http === undefined && this.https === undefined) {
-            this.http = http.createServer(this.app);
-            this.https = https.createServer(credentials, this.app);
-        }
 
         // capture sockets on both HTTP and HTTPS servers
         const addTracker = (srv: HttpServer | HttpsServer | undefined) => {
@@ -129,6 +119,18 @@ class ServerSideEventEmitter {
 
         addTracker(this.http);
         addTracker(this.https);
+
+        logger.info('server ready for SSE', logId);
+    }
+
+    /**
+     * Starts server for sending events
+     */
+    startServer() {
+        if (this.running) return;
+        this.running = true;
+        const logId = makeLogId('startServer');
+        logger.info('starting Server Side Events Emitter for UI updates');
 
         this.http?.listen(this.httpPort, () =>
             logger.info(`SSE http-server listening on port ${this.httpPort}`),
@@ -155,10 +157,9 @@ class ServerSideEventEmitter {
             this.https && new Promise<void>((r) => this.https!.close(() => r())),
         ]);
 
-        this.http = undefined;
-        this.https = undefined;
         this.bus.removeAllListeners();
         this.eventListeners.clear();
+        this.running = false;
     }
 
     /**
@@ -173,6 +174,7 @@ class ServerSideEventEmitter {
      * Reset all listeners and clear event bus
      */
     public _resetForTests() {
+        logger.debug(`resetting service for tests`, makeLogId('_resetForTests'));
         this.bus.removeAllListeners();
         this.eventListeners.clear();
     }
