@@ -44,10 +44,6 @@ next-env.d.ts
 frontend/db
 frontend/pgadmin
 
-#generated code
-generated
-!generated/.gitkeep
-
 # job sources folder
 service-jobs/sources
 !service-jobs/source/.gitkeep
