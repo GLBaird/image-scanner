@@ -26,9 +26,6 @@ export async function requireJwt(call: ServerUnaryCall<any, any>) {
     );
     try {
         const { payload } = await decryptWithA256CBC_HS512(raw, config.auth.secret);
-        console.log('>>>', payload);
-        // `payload` is already a JS object with your claims
-        // e.g. payload.sub, payload.email, payload.iat, payload.exp, etc.
         return payload;
     } catch (err) {
         console.error('JWT decryption failed', err);

@@ -1,6 +1,5 @@
 {
   "watch": ["src"],
   "ext": "ts",
-  "ignore": ["dist"],
-  "exec": "node --loader ts-node/esm src/service.ts"
+  "ignore": ["dist"]
 }

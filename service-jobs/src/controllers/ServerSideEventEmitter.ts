@@ -1,19 +1,19 @@
-import express from 'express';
+import * as express from 'express';
 import { Express } from 'express';
 import { Server as HttpServer } from 'http';
 import { Server as HttpsServer } from 'https';
 import { IncomingMessage, ServerResponse } from 'http';
 import type { Socket } from 'net';
-import fs from 'fs';
-import http from 'http';
-import https from 'https';
-import cors from 'cors';
+import * as fs from 'fs';
+import * as http from 'http';
+import * as https from 'https';
+import * as cors from 'cors';
 import { EventEmitter } from 'events';
 import config from '../configs/server';
 import logger, { getLoggerMetaFactory } from '../logger';
 
-const key = fs.readFileSync(__dirname + '/../certs/server.key');
-const cert = fs.readFileSync(__dirname + '/../certs/server.crt');
+const key = fs.readFileSync(__dirname + '/../../certs/server.key');
+const cert = fs.readFileSync(__dirname + '/../../certs/server.crt');
 const credentials = { key, cert };
 
 const makeLogId = getLoggerMetaFactory('ServerSideEventEmitter');

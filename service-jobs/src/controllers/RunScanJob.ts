@@ -1,5 +1,5 @@
 import { sendUnaryData, status } from '@grpc/grpc-js';
-import path from 'path';
+import * as path from 'path';
 import { StartScanningJobRequest } from '../generated/jobmanager/StartScanningJobRequest';
 import { StartScanningJobResponse } from '../generated/jobmanager/StartScanningJobResponse';
 import logger, { getLoggerMetaFactory } from '../logger';
@@ -120,7 +120,7 @@ export default async function runScanJob(
             );
             pStore.registerFileScanError(
                 jobId,
-                `error processing ${info.pathname}: ${error.message ?? error}`,
+                `error processing ${info.pathname}: ${(error as Error)?.message ?? error}`,
             );
         }
     });

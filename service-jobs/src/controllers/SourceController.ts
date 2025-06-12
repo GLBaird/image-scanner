@@ -1,11 +1,11 @@
 import { Stats } from 'fs';
 import { stat } from 'fs/promises';
-import path from 'path';
+import * as path from 'path';
 import readdir from 'readdir-enhanced';
 import logger, { getLoggerMetaFactory } from '../logger';
 import { Timestamp } from '../generated/google/protobuf/Timestamp';
 import { toTimestamp } from '../utils/timestamp';
-import Stream from 'stream';
+import * as Stream from 'stream';
 
 const makeLogId = getLoggerMetaFactory('SourceController');
 

@@ -88,8 +88,6 @@ export const getJobs = cache(async (): Promise<{ jobs: Job[]; errors?: string[] 
             });
         });
 
-        console.log('>>', response);
-
         let errors: string[] = [];
         let jobs: Job[] = [];
 
@@ -108,7 +106,6 @@ export const getJobs = cache(async (): Promise<{ jobs: Job[]; errors?: string[] 
             );
         }
 
-        revalidateTag(CacheTags.jobs);
         return { jobs, errors };
     } catch (error) {
         const message = `${(error as Error)?.message ?? error}`;

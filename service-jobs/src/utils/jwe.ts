@@ -1,4 +1,4 @@
-import { CompactEncrypt, compactDecrypt } from 'jose';
+import * as jose from 'jose-node-cjs-runtime';
 
 /**
  * Encrypts a JSON payload with dir+A256CBC-HS512.
@@ -15,7 +15,7 @@ export async function encryptWithA256CBC_HS512(
             `Invalid key length: expected 512 bits (64 bytes), got ${cek.length * 8} bits`,
         );
     }
-    return await new CompactEncrypt(new TextEncoder().encode(JSON.stringify(payload)))
+    return await new jose.CompactEncrypt(new TextEncoder().encode(JSON.stringify(payload)))
         .setProtectedHeader({ alg: 'dir', enc: 'A256CBC-HS512' })
         .encrypt(cek);
 }
@@ -35,7 +35,7 @@ export async function decryptWithA256CBC_HS512(
             `Invalid key length: expected 512 bits (64 bytes), got ${cek.length * 8} bits`,
         );
     }
-    const { plaintext, protectedHeader } = await compactDecrypt(token, cek);
+    const { plaintext, protectedHeader } = await jose.compactDecrypt(token, cek);
     const json = new TextDecoder().decode(plaintext);
     return { header: protectedHeader, payload: JSON.parse(json) };
 }

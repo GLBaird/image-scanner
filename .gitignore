@@ -50,3 +50,6 @@ service-jobs/sources
 
 # logs
 logs
+
+# build folders
+dist

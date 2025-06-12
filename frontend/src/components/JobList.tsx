@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Images, Loader, Play } from 'lucide-react';
+import { Images, Loader, Play, Plus } from 'lucide-react';
 import LocalDate from '@/components/ui/locale-date';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -56,7 +56,12 @@ export default function JobList({ jobs, hideTools = false }: JobListProps) {
             </MessageDialog>
             <Card className="dashboard-first-column">
                 <CardHeader className="bg-blue-50 py-2 shadow">
-                    <h2 className="m-0">Current Jobs:</h2>
+                    <div className="flex justify-between items-center">
+                        <h2 className="m-0">Current Jobs:</h2>
+                        <Button className="size-8 bg-white" variant="outline">
+                            <Plus />
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent className="p-0 mt-1 scroll-container">
                     <ul>
