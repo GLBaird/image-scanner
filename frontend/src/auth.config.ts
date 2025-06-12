@@ -1,6 +1,7 @@
 import { NextAuthConfig } from 'next-auth';
-import { encode, decode } from 'next-auth/jwt';
 import Routes from '@/lib/routes';
+import { encryptWithA256CBC_HS512, decryptWithA256CBC_HS512 } from './lib/jwe';
+import { EnvVariables, getEnv } from './envs';
 
 const baseConfig: NextAuthConfig = {
     providers: [],
@@ -12,7 +13,29 @@ const baseConfig: NextAuthConfig = {
     session: {
         strategy: 'jwt',
     },
-    jwt: { encode, decode },
+    callbacks: {
+        async jwt({ token, account }) {
+            // console.log('token:', token);
+            return token;
+        },
+        async session({ session, token }) {
+            // console.log('session:', session);
+            return session;
+        },
+    },
+    jwt: {
+        encode: async ({ token }) => {
+            if (!token) return '';
+            return encryptWithA256CBC_HS512(token, getEnv(EnvVariables.jweSecret));
+        },
+        decode: async ({ token }) => {
+            if (!token) return null;
+            const { payload } = await decryptWithA256CBC_HS512(token, getEnv(EnvVariables.jweSecret));
+            return payload;
+        },
+    },
+    // JWE_SECRET must be a 64-byte Base64 string
+    secret: getEnv(EnvVariables.authSecret),
 };
 
 export default baseConfig;

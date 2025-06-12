@@ -3,14 +3,13 @@ import JobDetail from '@/components/JobDetail';
 import { getJobs } from '@/app/actions/manage-jobs';
 import CacheTags from '@/lib/cache-tags';
 import ErrorsList from '@/components/ErrorsList';
-
 export const revalidate = 300;
 export const fetchCacheTags = [CacheTags.jobs];
 
 export default async function DashboardJobs() {
     const { jobs, errors } = await getJobs();
 
-    if (errors) {
+    if (errors && errors.length > 0) {
         return (
             <main className="m-10">
                 <h2>Error</h2>

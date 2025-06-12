@@ -20,9 +20,9 @@ const JobManagerController: JobManagerControllerHandlers = {
     createNewJob: async (call, callback) => {
         const logId = loggerMeta('createNewJob');
         try {
-            const { request, corrId, claims } = extractMetaData(call);
+            const { request, corrId, claims } = await extractMetaData(call);
             logId.corrId = corrId;
-            const id = await createJob(request, claims.sub);
+            const id = await createJob(request, claims.sub!);
             callback(null, { id });
             logger.info(`created new job: ${id}`, logId);
         } catch (error) {
@@ -32,7 +32,7 @@ const JobManagerController: JobManagerControllerHandlers = {
     getAllJobs: async (call, callback) => {
         const logId = loggerMeta('getAllJobs');
         try {
-            const { request, corrId } = extractMetaData(call);
+            const { request, corrId } = await extractMetaData(call);
             logId.corrId = corrId;
 
             const jobs = (await getAllJobs(request)).map((j) => ({
@@ -48,7 +48,7 @@ const JobManagerController: JobManagerControllerHandlers = {
     getAllJobsInProgress: async (call, callback) => {
         const logId = loggerMeta('getAllJobsInProgress');
         try {
-            const { request, corrId } = extractMetaData(call);
+            const { request, corrId } = await extractMetaData(call);
             logId.corrId = corrId;
 
             const jobs = (await getAllJobsInProgress(request)).map((j) => ({
@@ -64,7 +64,7 @@ const JobManagerController: JobManagerControllerHandlers = {
     deleteJobAndAllData: async (call, callback) => {
         const logId = loggerMeta('deleteJobAndAllData');
         try {
-            const { request, corrId } = extractMetaData(call);
+            const { request, corrId } = await extractMetaData(call);
             logId.corrId = corrId;
 
             await deleteJob(request);
@@ -77,7 +77,7 @@ const JobManagerController: JobManagerControllerHandlers = {
     getAvailableSources: async (call, callback) => {
         const logId = loggerMeta('getAvailableSources');
         try {
-            const { corrId } = extractMetaData(call);
+            const { corrId } = await extractMetaData(call);
             logId.corrId = corrId;
 
             const sources = await SourceController.getSources();
@@ -90,7 +90,7 @@ const JobManagerController: JobManagerControllerHandlers = {
     startScanningJob: async (call, callback) => {
         const logId = loggerMeta('startScanningJob');
         try {
-            const { request, corrId } = extractMetaData(call);
+            const { request, corrId } = await extractMetaData(call);
             logId.corrId = corrId;
 
             logger.info(`start running scan for job: ${request.id}`, logId);
@@ -107,7 +107,7 @@ const JobManagerController: JobManagerControllerHandlers = {
     getImages: async (call, callback) => {
         const logId = loggerMeta('startScanningJob');
         try {
-            const { request, corrId } = extractMetaData(call);
+            const { request, corrId } = await extractMetaData(call);
             logId.corrId = corrId;
 
             logger.info(`get images for job: ${request.jobId}`, logId);
@@ -133,7 +133,7 @@ const JobManagerController: JobManagerControllerHandlers = {
     GetData: async (call) => {
         const logId = loggerMeta('GetData');
         try {
-            const { request, corrId } = extractMetaData(call);
+            const { request, corrId } = await extractMetaData(call);
             logId.corrId = corrId;
 
             streamSourceFile(request, call, corrId);

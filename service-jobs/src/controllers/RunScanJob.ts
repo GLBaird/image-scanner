@@ -1,5 +1,5 @@
 import { sendUnaryData, status } from '@grpc/grpc-js';
-import * as path from 'path';
+import path from 'path';
 import { StartScanningJobRequest } from '../generated/jobmanager/StartScanningJobRequest';
 import { StartScanningJobResponse } from '../generated/jobmanager/StartScanningJobResponse';
 import logger, { getLoggerMetaFactory } from '../logger';

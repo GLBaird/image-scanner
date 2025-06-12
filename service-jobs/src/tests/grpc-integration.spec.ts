@@ -1,5 +1,5 @@
-import * as assert from 'assert';
-import * as path from 'path';
+import assert from 'assert';
+import path from 'path';
 import { v4 as uuid } from 'uuid';
 import { JobManagerControllerClient } from '../generated/jobmanager/JobManagerController';
 import { Job } from '../generated/jobmanager/Job';

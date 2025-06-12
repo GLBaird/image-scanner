@@ -1,5 +1,5 @@
-import * as request from 'supertest';
-import * as assert from 'assert';
+import request from 'supertest';
+import assert from 'assert';
 import { request as httpRequest } from 'http';
 import { once } from 'events';
 import { EventSource } from 'eventsource';

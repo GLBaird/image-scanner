@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import * as path from 'path';
+import path from 'path';
 
 const mimeResultPattern = /:\s(.+)(\n)?$/i;
 
@@ -63,14 +63,16 @@ const videoTypes = {
     '.m3u8': 'video/x-mpegURL', // this is deliberately wrong -- should be application/x-mpegURL
 };
 
-const mediaTypes = { ...imageTypes, ...videoTypes };
+const mediaTypes = { ...imageTypes, ...videoTypes } as const;
 
 /**
  * Fallback for getting mimetype from filename only using extension
  * @param filepath
  */
 export const getMediaMimeType = (filepath: string): string =>
-    mediaTypes[path.extname(filepath && filepath.toLowerCase())] || 'unknown';
+    (mediaTypes as { [key: string]: string | undefined })[
+        path.extname(filepath && filepath.toLowerCase())
+    ] ?? 'unknown';
 
 /**
  * gets Mime Type from a file using unix file --mime-type, so works without file extension.

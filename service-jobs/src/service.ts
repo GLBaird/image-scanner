@@ -1,6 +1,6 @@
-import * as path from 'path';
-import * as grpc from '@grpc/grpc-js';
-import * as protoLoader from '@grpc/proto-loader';
+import path from 'path';
+import grpc from '@grpc/grpc-js';
+import protoLoader from '@grpc/proto-loader';
 import { ProtoGrpcType } from './generated/service-jobs';
 import JobManagerController from './controllers/JobManagerController';
 import config from './configs/server';

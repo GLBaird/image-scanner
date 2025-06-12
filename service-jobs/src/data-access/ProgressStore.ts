@@ -167,7 +167,7 @@ class ProgressStore {
      * @param started has the scan already started? default false.
      * @returns
      */
-    public addJob(jobId, started: boolean = false) {
+    public addJob(jobId: string, started: boolean = false) {
         this.jobs.add(jobId);
         if (this.jobProgress.has(jobId)) return;
         this.jobProgress.set(jobId, {

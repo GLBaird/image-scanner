@@ -1,4 +1,4 @@
-import * as im from 'imagemagick';
+import im from 'imagemagick';
 import logger from '../logger';
 
 export type ImageDetails = {

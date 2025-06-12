@@ -9,6 +9,11 @@ export const EnvVariables = {
     },
     /** @description Added by `npx auth`. Read more: https://cli.authjs.dev */
     authSecret: { ref: 'AUTH_SECRET', default: 'jqE4YdBGILNOKsBJUKwyFkM3k99+ePINsVptlNEukPo=' },
+    /** @description generated from generate_auth_key.js - for encrypting and descrypting JWE tokens */
+    jweSecret: {
+        ref: 'JWE_SECRET',
+        default: 'oRVQGb1cDGLdbhXrP1DT0Kqym81MYl5WfOKibjtTtxGP62h+Ot1NA+3eX8VUPIH0h4+O65dhnm79hF7k5kjQhQ==',
+    },
     /** @description Auth0 - Github ID */
     authGithubId: { ref: 'AUTH_GITHUB_ID', default: '' },
     /** @description Auth0 - Github Secret */
@@ -29,6 +34,10 @@ export const EnvVariables = {
     logMonochrome: { ref: 'LOG_MONOCHROME', default: 'false' },
     /** @description log date format - default is no date added to log, as date and external logging is handled by docker. Date can be added for development only. */
     logDateFormat: { ref: 'LOG_DATE_FORMAT', default: '' },
+    /** @description domain for gRPC service JobManager */
+    grpcDomain: { ref: 'GRPC_DOMAIN', default: '0.0.0.0' },
+    /** @description port for gRPC service JobManager */
+    grpcPort: { ref: 'GRPC_PORT', default: '5042' },
 };
 
 /**

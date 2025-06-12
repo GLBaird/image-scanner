@@ -1,5 +1,5 @@
-import { ServerUnaryCall, sendUnaryData, Metadata } from '@grpc/grpc-js';
-import * as jwt from 'jsonwebtoken';
+import { ServerUnaryCall, Metadata } from '@grpc/grpc-js';
+import { encryptWithA256CBC_HS512, decryptWithA256CBC_HS512 } from './jwe';
 import config from '../configs/server';
 
 export class AuthError extends Error {
@@ -19,13 +19,19 @@ export class AuthError extends Error {
  * @returns {claims|null} – decoded JWT payload if valid = check for null as claims are invalid
  * @throws {AuthError} if token invalid or not found
  */
-export function requireJwt<Req, Res>(call: ServerUnaryCall<Req, Res>) {
-    const raw = (call.metadata.get('authorization')[0] as string | undefined) ?? '';
-    const token = raw.replace(/^Bearer\s+/i, '');
-
+export async function requireJwt(call: ServerUnaryCall<any, any>) {
+    const raw = ((call.metadata.get('authorization')[0] as string | undefined) ?? '').replace(
+        /^Bearer\s+/i,
+        '',
+    );
     try {
-        return jwt.verify(token, config.auth.secret);
-    } catch {
+        const { payload } = await decryptWithA256CBC_HS512(raw, config.auth.secret);
+        console.log('>>>', payload);
+        // `payload` is already a JS object with your claims
+        // e.g. payload.sub, payload.email, payload.iat, payload.exp, etc.
+        return payload;
+    } catch (err) {
+        console.error('JWT decryption failed', err);
         throw new AuthError('missing or invalid token');
     }
 }
@@ -35,22 +41,21 @@ export function requireJwt<Req, Res>(call: ServerUnaryCall<Req, Res>) {
  *
  * @param overrides  – any extra / overriding claims you need
  */
-export function makeTestToken(
+export async function makeTestToken(
     userId: string = 'test-user-id',
     overrides: Record<string, unknown> = {},
 ) {
     const now = Math.floor(Date.now() / 1000);
 
-    // Minimum claims that Auth.js usually puts in the token
     const claims = {
         sub: userId,
         role: 'user',
         iat: now,
-        exp: now + 60 * 60, // 1-hour TTL is plenty for tests
+        exp: now + 60 * 60, // 1h
         ...overrides,
     };
 
-    return jwt.sign(claims, config.auth.secret, { algorithm: 'HS256' });
+    return await encryptWithA256CBC_HS512(claims, config.auth.secret);
 }
 
 /** Helper that returns Metadata with the bearer token already set */

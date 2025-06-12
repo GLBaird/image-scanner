@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as crypto from 'crypto';
+import fs from 'fs';
+import crypto from 'crypto';
 
 /**
  * Generates hashes for each file processed - MD5 and SHA1

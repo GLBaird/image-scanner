@@ -1,6 +1,7 @@
 import { ServerUnaryCall } from '@grpc/grpc-js';
 import getCorrId from './get-correlation-id';
 import { requireJwt } from './auth-helper';
+import { JWTPayload } from 'jose';
 
 export class MissingCorrIdError extends Error {
     constructor(message = 'missing correlation id') {
@@ -12,17 +13,17 @@ export class MissingCorrIdError extends Error {
     }
 }
 
-export function extractMetaData<T, I>(
+export async function extractMetaData<T, I>(
     call: ServerUnaryCall<T, I>,
-): {
+): Promise<{
     request: T;
     corrId: string | undefined;
-    claims: { sub: string; role: string };
-} {
+    claims: JWTPayload;
+}> {
     const { request } = call;
     const corrId = getCorrId(call.metadata);
     if (!corrId) throw new MissingCorrIdError();
-    let claims = requireJwt(call);
+    let claims = await requireJwt(call);
 
     return { request, corrId, claims };
 }
