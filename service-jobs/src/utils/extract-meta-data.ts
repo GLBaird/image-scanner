@@ -1,7 +1,7 @@
 import { ServerUnaryCall } from '@grpc/grpc-js';
 import getCorrId from './get-correlation-id';
 import { requireJwt } from './auth-helper';
-import { JWTPayload } from 'jose';
+import { JWTPayload } from 'jose-node-cjs-runtime';
 
 export class MissingCorrIdError extends Error {
     constructor(message = 'missing correlation id') {

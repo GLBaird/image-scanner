@@ -41,8 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 # database files
-frontend/db
-frontend/pgadmin
+db
+pgadmin
 
 # job sources folder
 service-jobs/sources
