@@ -1,13 +1,10 @@
-import request from 'supertest';
-import assert from 'assert';
-import { request as httpRequest } from 'http';
-import { once } from 'events';
+import * as assert from 'assert';
 import { EventSource } from 'eventsource';
-import ServerSideEventEmitter from '../controllers/ServerSideEventEmitter';
+import ServerSideEventEmitter from '../src/controllers/ServerSideEventEmitter';
 import ProgressUpdatesController, {
     ProgressUpdate,
-} from '../controllers/ProgressUpdatesController';
-import UIUpdatesController from '../controllers/UIUpdatesController';
+} from '../src/controllers/ProgressUpdatesController';
+import UIUpdatesController from '../src/controllers/UIUpdatesController';
 
 describe('Test UIUpdatesController with ProgressUpdatesController integration', function () {
     this.timeout(5000);

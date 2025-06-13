@@ -6,10 +6,11 @@ import logger, { getLoggerMetaFactory } from '../logger';
 import { Timestamp } from '../generated/google/protobuf/Timestamp';
 import { toTimestamp } from '../utils/timestamp';
 import * as Stream from 'stream';
+import config from '../configs/server';
 
 const makeLogId = getLoggerMetaFactory('SourceController');
 
-const SOURCE_FOLDER = process.env.SOURCE_FOLDER ?? path.resolve(__dirname, '..', 'sources');
+const SOURCE_FOLDER = config.source;
 logger.info(`Source folder set to: ${SOURCE_FOLDER}`, makeLogId('init'));
 
 const filterDirs = (file: Stats) => file.isDirectory();

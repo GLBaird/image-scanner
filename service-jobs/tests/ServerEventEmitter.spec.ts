@@ -1,9 +1,9 @@
-import request from 'supertest';
-import assert from 'assert';
+import * as request from 'supertest';
+import * as assert from 'assert';
 import { request as httpRequest } from 'http';
 import { once } from 'events';
 import { EventSource } from 'eventsource';
-import ServerSideEventEmitter from '../controllers/ServerSideEventEmitter';
+import ServerSideEventEmitter from '../src/controllers/ServerSideEventEmitter';
 
 describe('Test server Event Emitter', function () {
     this.timeout(5000);

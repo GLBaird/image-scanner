@@ -1,22 +1,22 @@
-import assert from 'assert';
-import path from 'path';
+import * as assert from 'assert';
+import * as path from 'path';
 import { v4 as uuid } from 'uuid';
-import { JobManagerControllerClient } from '../generated/jobmanager/JobManagerController';
-import { Job } from '../generated/jobmanager/Job';
+import { JobManagerControllerClient } from '../src/generated/jobmanager/JobManagerController';
+import { Job } from '../src/generated/jobmanager/Job';
 import getTestClient from './helpers/grpc-client';
-import prisma from '../prisma/client';
-import { CreateNewJobResponse__Output } from '../generated/jobmanager/CreateNewJobResponse';
-import { GetJobsResponse__Output } from '../generated/jobmanager/GetJobsResponse';
+import prisma from '../src/prisma/client';
+import { CreateNewJobResponse__Output } from '../src/generated/jobmanager/CreateNewJobResponse';
+import { GetJobsResponse__Output } from '../src/generated/jobmanager/GetJobsResponse';
 import { notSuperset } from './helpers/set-comparisons';
-import { fromTimestamp } from '../utils/timestamp';
-import { DeleteJobResponse } from '../generated/jobmanager/DeleteJobResponse';
-import { GetAvailableSourcesResponse } from '../generated/jobmanager/GetAvailableSourcesResponse';
+import { fromTimestamp } from '../src/utils/timestamp';
+import { DeleteJobResponse } from '../src/generated/jobmanager/DeleteJobResponse';
+import { GetAvailableSourcesResponse } from '../src/generated/jobmanager/GetAvailableSourcesResponse';
 import { SourceFiles, SourceFolders } from './helpers/source-data';
-import { StartScanningJobResponse } from '../generated/jobmanager/StartScanningJobResponse';
+import { StartScanningJobResponse } from '../src/generated/jobmanager/StartScanningJobResponse';
 import pause from './helpers/pause';
-import { GetImagesResponse } from '../generated/jobmanager/GetImagesResponse';
-import { makeAuthMetadata, makeTestToken } from '../utils/auth-helper';
-import { GetDataResponse } from '../generated/jobmanager/GetDataResponse';
+import { GetImagesResponse } from '../src/generated/jobmanager/GetImagesResponse';
+import { makeAuthMetadata, makeTestToken } from '../src/utils/auth-helper';
+import { GetDataResponse } from '../src/generated/jobmanager/GetDataResponse';
 import getMd5Hash from './helpers/md5';
 import { Metadata } from '@grpc/grpc-js';
 
@@ -78,6 +78,8 @@ function assertJobData(data: unknown, scanned: boolean = false, inProgress: bool
 describe('gRPC Integration Test', function () {
     this.timeout(5000);
     let client: JobManagerControllerClient;
+    let jweToken: string;
+    let meta: Metadata;
 
     before(async () => {
         // check clean DB
@@ -85,8 +87,16 @@ describe('gRPC Integration Test', function () {
         const iCount = await prisma.image.count();
         if (jCount > 0 || iCount > 0)
             throw new Error('Should be a clean DB for tests!! Will erase all data...');
-        console.log('setting up connections');
+        // get JWT/JWE token and corrId
+        jweToken = await makeTestToken(userId);
+        const correlationId = uuid();
         client = await getTestClient();
+
+        // make metadata
+        meta = makeAuthMetadata(jweToken);
+        meta.set('x-correlation-id', correlationId);
+
+        console.log('setting up connections');
         await createJobs(userId, imageCount);
     });
 
@@ -101,11 +111,6 @@ describe('gRPC Integration Test', function () {
     const name = 'test job';
     const description = 'test job description';
     const source = '/test';
-
-    const correlationId = uuid();
-    const token = makeTestToken(userId);
-    const meta = makeAuthMetadata(token);
-    meta.set('x-correlation-id', correlationId);
 
     ///////////////////////////////////////////////////
     // Helper function for running getAllJobs using client

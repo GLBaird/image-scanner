@@ -5,6 +5,7 @@ dotenv.config();
 
 const config = {
     port: process.env.PORT || 5042,
+    source: process.env.SOURCE_FOLDER ?? path.resolve(__dirname, '../../sources'),
     serverSideEventsPort: {
         http: process.env.SERVER_SIDE_EVENTS_PORT_HTTP || '4042',
         https: process.env.SERVER_SIDE_EVENTS_PORT_HTTPS || '4043',

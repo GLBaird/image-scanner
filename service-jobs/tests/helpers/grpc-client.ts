@@ -1,16 +1,14 @@
 import * as path from 'path';
 import * as grpc from '@grpc/grpc-js';
 import * as protoloader from '@grpc/proto-loader';
-import { ProtoGrpcType } from '../../generated/service-jobs';
-import { JobManagerControllerClient } from '../../generated/jobmanager/JobManagerController';
-import config from '../../configs/server';
+import { ProtoGrpcType } from '../../src/generated/service-jobs';
+import { JobManagerControllerClient } from '../../src/generated/jobmanager/JobManagerController';
+import config from '../../src/configs/server';
 
 const PROTO_FILE = '../../protos/service-jobs.proto';
 
 const packageDef = protoloader.loadSync(path.resolve(__dirname, PROTO_FILE));
-const grpcObj = grpc.loadPackageDefinition(
-    packageDef,
-) as unknown as ProtoGrpcType;
+const grpcObj = grpc.loadPackageDefinition(packageDef) as unknown as ProtoGrpcType;
 
 const grpcDomain = process.env.TEST_GRPC_DOMAIN || '0.0.0.0';
 

@@ -1,7 +1,7 @@
-import assert from 'assert';
+import * as assert from 'assert';
 import ProgressUpdatesController, {
     ProgressUpdate,
-} from '../controllers/ProgressUpdatesController';
+} from '../src/controllers/ProgressUpdatesController';
 
 describe('Test ProgressUpdateController', function () {
     ///////////////////////////////////////////////////
@@ -30,10 +30,7 @@ describe('Test ProgressUpdateController', function () {
     ///////////////////////////////////////////////////
 
     it('should have a shard instance', () => {
-        assert(
-            ProgressUpdatesController.get() instanceof
-                ProgressUpdatesController,
-        );
+        assert(ProgressUpdatesController.get() instanceof ProgressUpdatesController);
     });
 
     const shared = ProgressUpdatesController.get();
@@ -107,12 +104,10 @@ describe('Test ProgressUpdateController', function () {
 
     it('should notify multiple listeners on a job', () => {
         let called = 0;
-        const listeners = [...new Array(10)].map(
-            () => (update: ProgressUpdate) => {
-                assert.deepEqual(update, updateToSend);
-                called += 1;
-            },
-        );
+        const listeners = [...new Array(10)].map(() => (update: ProgressUpdate) => {
+            assert.deepEqual(update, updateToSend);
+            called += 1;
+        });
         listeners.forEach((l) => shared.addListener(jobId1, l));
         assert.equal(called, 0);
         shared.sendProgressUpdate(updateToSend, jobId2);

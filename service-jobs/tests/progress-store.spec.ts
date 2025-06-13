@@ -1,8 +1,8 @@
-import assert from 'assert';
+import * as assert from 'assert';
 import ProgressUpdatesController, {
     ProgressUpdate,
-} from '../controllers/ProgressUpdatesController';
-import ProgressStore from '../data-access/ProgressStore';
+} from '../src/controllers/ProgressUpdatesController';
+import ProgressStore from '../src/data-access/ProgressStore';
 import pause from './helpers/pause';
 
 type Images = 'jpeg' | 'png' | 'any';
@@ -39,14 +39,11 @@ describe('Test ProgressStore', function () {
         }));
 
     const getStats = (files: { type: Images }[]) =>
-        files.reduce(
-            (acc, val) => ({ ...acc, [val.type]: acc[val.type] + 1 }),
-            {
-                jpeg: 0,
-                png: 0,
-                any: 0,
-            },
-        );
+        files.reduce((acc, val) => ({ ...acc, [val.type]: acc[val.type] + 1 }), {
+            jpeg: 0,
+            png: 0,
+            any: 0,
+        });
 
     let updateCount = 0;
     let lastUpdate: ProgressUpdate | undefined;
@@ -129,9 +126,7 @@ describe('Test ProgressStore', function () {
         assert.equal(lastUpdate.info, files.slice(-1).pop()!.filepath);
         assert.equal(lastUpdate.stages.length, 0);
         // scan 100 more and mark final image as completing scan
-        files.forEach((file, index) =>
-            store.updateForFileScan(job1, file, index === 99),
-        );
+        files.forEach((file, index) => store.updateForFileScan(job1, file, index === 99));
         await pause(getWaitTime(1));
         assert.equal(updateCount, 2);
         assert.equal(lastUpdate.files, 200);

@@ -1,6 +1,6 @@
 import { updateJobProgress } from '../data-access/Job';
 import ProgressStore from '../data-access/ProgressStore';
-import pause from '../tests/helpers/pause';
+import pause from '../../tests/helpers/pause';
 
 export default async function runDataExtraction(jobId: string) {
     // TODO: add stages for additional data extraction
