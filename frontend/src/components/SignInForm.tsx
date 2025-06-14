@@ -2,7 +2,6 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { Github, Loader2 as Loader } from 'lucide-react';
 import Google from '@/assets/google-tile.svg?component';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,7 @@ export default function SignInForm({ popupMode = false }: SignInFormProps) {
     const [googlePending, setGooglePending] = useState(false);
     const [errors, setErrors] = useState<string[]>([]);
 
-    const form = useForm<z.infer<typeof signInSchema>>({
+    const form = useForm<SignInInfo>({
         resolver: zodResolver(signInSchema),
         defaultValues: {
             email: '',

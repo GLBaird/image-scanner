@@ -1,13 +1,15 @@
 import JobList from '@/components/JobList';
-import JobDetail from '@/components/JobDetail';
-import { getJobs } from '@/app/actions/manage-jobs';
+import { getJobs, getScanSources } from '@/app/actions/manage-jobs';
 import CacheTags from '@/lib/cache-tags';
 import ErrorsList from '@/components/ErrorsList';
+import { JobsDetailChooser } from '@/components/JobsDetailChooser';
 export const revalidate = 300;
 export const fetchCacheTags = [CacheTags.jobs];
 
 export default async function DashboardJobs() {
-    const { jobs, errors } = await getJobs();
+    const { jobs, errors: jobErrors } = await getJobs();
+    const { sources, errors: sourceErrors } = await getScanSources();
+    const errors = [...(jobErrors ?? []), ...(sourceErrors ?? [])];
 
     if (errors && errors.length > 0) {
         return (
@@ -24,7 +26,7 @@ export default async function DashboardJobs() {
             <div className="w-full md:w-[43%]">
                 <JobList jobs={jobs} />
             </div>
-            <JobDetail jobs={jobs} />
+            <JobsDetailChooser jobs={jobs} sources={sources} />
         </main>
     );
 }

@@ -45,9 +45,9 @@ message Job {
     string name = 2;
     string description = 3;
     string source = 4;
-    uint64 images = 5;
-    uint64 jpegs = 6;
-    uint64 pngs = 7;
+    uint32 images = 5;
+    uint32 jpegs = 6;
+    uint32 pngs = 7;
     string user_id = 8;
     google.protobuf.Timestamp created_at = 9;
     bool scanned = 10;

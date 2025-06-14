@@ -12,6 +12,8 @@ import Routes from '@/lib/routes';
 import { Job, startJobScan } from '@/app/actions/manage-jobs';
 import { useState } from 'react';
 import MessageDialog from './MessageDialog';
+import { setUrlParams } from '@/lib/url';
+import { NEW_JOB_ID } from '@/components/CreateNewJobForm';
 
 export type JobListProps = {
     jobs: Job[];
@@ -31,9 +33,7 @@ export default function JobList({ jobs, hideTools = false }: JobListProps) {
             router.replace(pathname);
             return;
         }
-        const params = new URLSearchParams(searchParams);
-        params.set('selected', id);
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        setUrlParams({ pathname, searchParams, key: 'selected', value: id }, router);
     };
 
     const handleScanJob = async (id: string) => {
@@ -47,6 +47,10 @@ export default function JobList({ jobs, hideTools = false }: JobListProps) {
         router.push(`${Routes.DASHBOARD_PROGRESS}?selected=${id}`);
     };
 
+    const handleAddJob = () => {
+        setUrlParams({ pathname, searchParams, key: 'selected', value: NEW_JOB_ID }, router);
+    };
+
     return (
         <>
             <MessageDialog open={errors.length > 0} title="Error" onConfirm={() => setErrors([])}>
@@ -58,7 +62,7 @@ export default function JobList({ jobs, hideTools = false }: JobListProps) {
                 <CardHeader className="bg-blue-50 py-2 shadow">
                     <div className="flex justify-between items-center">
                         <h2 className="m-0">Current Jobs:</h2>
-                        <Button className="size-8 bg-white" variant="outline">
+                        <Button className="size-8 bg-white" variant="outline" onClick={handleAddJob}>
                             <Plus />
                         </Button>
                     </div>
