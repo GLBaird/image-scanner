@@ -4,6 +4,7 @@ import logger from '../logger';
 import prisma from '../prisma/client';
 import ServiceError from '../utils/ServiceError';
 import extractPageParamsFromRequest from '../utils/extract-page-params-from-request';
+import pause from '../../tests/helpers/pause';
 
 export type ImageData = {
     filename: string;
@@ -73,6 +74,12 @@ export async function addImageDataForJob(jobId: string, data: ImageData): Promis
     }
 }
 
+export async function waitForImageUpdats(jobId: string): Promise<void> {
+    while (pending.filter((item) => item.jobId === jobId).length > 0) {
+        await pause(1000);
+    }
+}
+
 /**
  * Used to gather stats for images on DB for a job
  * @param jobId
@@ -80,7 +87,7 @@ export async function addImageDataForJob(jobId: string, data: ImageData): Promis
  */
 export async function getImageStatsForJob(jobId: string): Promise<{ pngs: number; jpegs: number }> {
     const jpegs = await prisma.image.count({
-        where: { jobIds: { has: jobId }, mimetype: { equals: 'image/jpeg ' } },
+        where: { jobIds: { has: jobId }, mimetype: { equals: 'image/jpeg' } },
     });
     const pngs = await prisma.image.count({
         where: { jobIds: { has: jobId }, mimetype: { equals: 'image/png ' } },

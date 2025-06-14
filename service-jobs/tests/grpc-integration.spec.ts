@@ -76,7 +76,7 @@ function assertJobData(data: unknown, scanned: boolean = false, inProgress: bool
 ///////////////////////////////////////////////////
 
 describe('gRPC Integration Test', function () {
-    this.timeout(5000);
+    this.timeout(50000);
     let client: JobManagerControllerClient;
     let jweToken: string;
     let meta: Metadata;
@@ -517,5 +517,55 @@ describe('gRPC Integration Test', function () {
         });
 
         await Promise.all(promises);
+    });
+
+    it('should scan large amount of files without overloading or crashing', async () => {
+        const { id } = await prisma.job.create({
+            data: {
+                name: 'large',
+                description: 'large test scan',
+                userId,
+                source: '../images_1000',
+            },
+        });
+        const response = await new Promise<StartScanningJobResponse>((resolve, reject) => {
+            client.startScanningJob({ id }, meta, (err, resp) => {
+                if (err) reject(err);
+                else resolve(resp!);
+            });
+        });
+        assert.equal(response.errors, undefined);
+        assert(response.state);
+        type expectedState = 'started' | 'in-progress' | 'completed';
+        assert((response.state as expectedState) === 'started');
+
+        // wait for job to complete
+        await new Promise<void>((resolve, reject) => {
+            let counter = 0;
+            const ref = setInterval(async () => {
+                try {
+                    counter++;
+                    const job = await prisma.job.findUnique({ where: { id } });
+                    if (job && job.scanned && !job.inProgress) {
+                        console.log(`completed 1000 images in ${counter * 2} seconds`);
+                        clearInterval(ref);
+                        resolve();
+                    }
+                } catch (e) {
+                    reject(e);
+                }
+            }, 2000);
+        });
+
+        const jobImageCount = await prisma.image.count({ where: { jobIds: { has: id } } });
+        assert.equal(jobImageCount, 1000);
+
+        const updatedJob = await prisma.job.findUnique({ where: { id } });
+        assert(updatedJob);
+        assert.equal(updatedJob.inProgress, false);
+        assert.equal(updatedJob.scanned, true);
+        assert.equal(updatedJob.images, 1000);
+        assert.equal(updatedJob.jpegs, 1000);
+        assert.equal(updatedJob.pngs, 0);
     });
 });

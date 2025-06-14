@@ -4,10 +4,11 @@ import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Job } from '@/app/actions/manage-jobs';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { Loader2 as Loader } from 'lucide-react';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { JobsDashboardContext } from '@/app/contexts/JobsDashboard';
 
 type ScanInfo = {
     info?: string;
@@ -134,11 +135,9 @@ function getUpdatesUI(state: ProgressState): React.ReactNode {
     return <StageScanUpdate state={state} />;
 }
 
-export type ProgressDetailProps = {
-    jobs: Job[];
-};
-export default function ProgressDetail({ jobs }: ProgressDetailProps) {
+export default function ProgressDetail() {
     const [state, setState] = useState<ProgressState>(initialState);
+    const { jobs } = useContext(JobsDashboardContext);
     const { errors } = state;
 
     const pathname = usePathname();

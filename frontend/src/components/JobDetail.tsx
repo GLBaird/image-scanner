@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import LocalDate from '@/components/ui/locale-date';
 import Routes from '@/lib/routes';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { DialogDescription } from '@/components/ui/dialog';
 import ErrorsList from '@/components/ErrorsList';
 import { deleteJob, Job, startJobScan } from '@/app/actions/manage-jobs';
+import { JobsDashboardContext } from '@/app/contexts/JobsDashboard';
 
 function getCurrentState(job: Job): string {
     if (job.scanned) return 'Scanned and data ready for use.';
@@ -36,11 +37,9 @@ const initialState: JobDetailState = {
     scanErrors: [],
 };
 
-export type JobDetailProps = {
-    jobs: Job[];
-};
-export default function JobDetail({ jobs }: JobDetailProps) {
+export default function JobDetail() {
     const [state, setState] = useState<JobDetailState>(initialState);
+    const { jobs } = useContext(JobsDashboardContext);
     const { confirmDelete, pendingDelete, pendingScan, deleteErrors, scanErrors } = state;
 
     const pathname = usePathname();
@@ -54,7 +53,7 @@ export default function JobDetail({ jobs }: JobDetailProps) {
         if (pendingScan || !selected) return;
         setState((prev) => ({ ...prev, scanErrors: [], pendingScan: true }));
         const { errors } = await startJobScan(selected);
-        if (errors) {
+        if (errors && errors.length > 0) {
             setState((prev) => ({ ...prev, pendingScan: false, scanErrors: errors }));
             return;
         }

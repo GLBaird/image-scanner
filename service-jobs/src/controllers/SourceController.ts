@@ -6,6 +6,7 @@ import logger, { getLoggerMetaFactory } from '../logger';
 import { Timestamp } from '../generated/google/protobuf/Timestamp';
 import { toTimestamp } from '../utils/timestamp';
 import * as Stream from 'stream';
+import ConcurrencyLimiter from '../utils/concureency-limiter';
 import config from '../configs/server';
 
 const makeLogId = getLoggerMetaFactory('SourceController');
@@ -46,6 +47,11 @@ export type ScannerJob = {
     minFileSize: number;
     callback: ScannerCallback;
 };
+
+const limiter = new ConcurrencyLimiter(parseInt(config.concurrencyLimit) ?? 100);
+let inflight = 0;
+let paused = false;
+const maxInflight = parseInt(config.maxInflight) ?? 200;
 
 class SourceController {
     private static pendingSources: ScannerJob[] = [];
@@ -132,16 +138,37 @@ class SourceController {
         });
 
         this.activeStream.on('data', async (stats: Stats & { path: string }) => {
-            const result = callback(
-                {
-                    filename: path.basename(stats.path),
-                    pathname: '/' + path.join(location, stats.path),
-                    creationDate: stats.ctime,
-                    size: (stats.size / 1024 / 1024).toFixed(2), // size in megabytes (MiB, i.e. 1024²)
-                },
-                false,
-            );
-            if (result instanceof Promise) await result;
+            inflight++;
+            if (inflight > maxInflight && !paused && this.activeStream) {
+                this.activeStream.pause();
+                paused = true;
+            }
+
+            limiter
+                .run(async () => {
+                    const result = callback(
+                        {
+                            filename: path.basename(stats.path),
+                            pathname: '/' + path.join(location, stats.path),
+                            creationDate: stats.ctime,
+                            size: (stats.size / 1024 / 1024).toFixed(2),
+                        },
+                        false,
+                    );
+                    if (result instanceof Promise) await result;
+                })
+                .catch(async (error) => {
+                    logger.error(`Error processing file: ${stats.path}, ${error}`, logId);
+                    const result = callback(error.message ?? `${error}`, false);
+                    if (result instanceof Promise) await result;
+                })
+                .finally(() => {
+                    inflight--;
+                    if (paused && inflight < maxInflight / 2 && this.activeStream) {
+                        this.activeStream.resume();
+                        paused = false;
+                    }
+                });
         });
 
         this.activeStream.on('error', async (error) => {

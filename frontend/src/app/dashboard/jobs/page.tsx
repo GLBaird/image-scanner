@@ -3,6 +3,8 @@ import { getJobs, getScanSources } from '@/app/actions/manage-jobs';
 import CacheTags from '@/lib/cache-tags';
 import ErrorsList from '@/components/ErrorsList';
 import { JobsDetailChooser } from '@/components/JobsDetailChooser';
+import JobsDashboardContextProvider from '@/app/contexts/JobsDashboard';
+
 export const revalidate = 300;
 export const fetchCacheTags = [CacheTags.jobs];
 
@@ -23,10 +25,12 @@ export default async function DashboardJobs() {
 
     return (
         <main className="dashboard-container">
-            <div className="w-full md:w-[43%]">
-                <JobList jobs={jobs} />
-            </div>
-            <JobsDetailChooser jobs={jobs} sources={sources} />
+            <JobsDashboardContextProvider jobs={jobs} sources={sources}>
+                <div className="w-full md:w-[43%]">
+                    <JobList />
+                </div>
+                <JobsDetailChooser jobs={jobs} sources={sources} />
+            </JobsDashboardContextProvider>
         </main>
     );
 }

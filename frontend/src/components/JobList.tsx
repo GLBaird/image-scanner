@@ -9,19 +9,29 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import Link from 'next/link';
 import Routes from '@/lib/routes';
-import { Job, startJobScan } from '@/app/actions/manage-jobs';
-import { useState } from 'react';
+import { getJobs, getJobsInProgress, Job, startJobScan } from '@/app/actions/manage-jobs';
+import { useContext, useEffect, useRef, useState } from 'react';
 import MessageDialog from './MessageDialog';
 import { setUrlParams } from '@/lib/url';
 import { NEW_JOB_ID } from '@/components/CreateNewJobForm';
+import { JobsDashboardContext } from '@/app/contexts/JobsDashboard';
+
+type JobListState = {
+    errors: string[];
+    jobPendingScan: string;
+};
+
+const initialState: JobListState = {
+    errors: [],
+    jobPendingScan: '',
+};
 
 export type JobListProps = {
-    jobs: Job[];
     hideTools?: boolean;
 };
-export default function JobList({ jobs, hideTools = false }: JobListProps) {
-    const [jobPendingScan, setJobPendingScan] = useState('');
-    const [errors, setErrors] = useState<string[]>([]);
+export default function JobList({ hideTools = false }: JobListProps) {
+    const [state, setState] = useState(initialState);
+    const { jobs } = useContext(JobsDashboardContext);
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -37,11 +47,10 @@ export default function JobList({ jobs, hideTools = false }: JobListProps) {
     };
 
     const handleScanJob = async (id: string) => {
-        setJobPendingScan(id);
+        setState((prev) => ({ ...prev, jobPendingScan: id }));
         const { errors } = await startJobScan(id);
-        if (errors) {
-            setErrors(errors);
-            setJobPendingScan('');
+        if (errors && errors.length > 0) {
+            setState((prev) => ({ ...prev, errors, jobPendingScan: '' }));
             return;
         }
         router.push(`${Routes.DASHBOARD_PROGRESS}?selected=${id}`);
@@ -53,10 +62,14 @@ export default function JobList({ jobs, hideTools = false }: JobListProps) {
 
     return (
         <>
-            <MessageDialog open={errors.length > 0} title="Error" onConfirm={() => setErrors([])}>
+            <MessageDialog
+                open={state.errors.length > 0}
+                title="Error"
+                onConfirm={() => setState((prev) => ({ ...prev, errors: [] }))}
+            >
                 There has been an error trying to start the job scan:
                 <br />
-                <span className="text-red-500 inline-block ml-5 mt-2">{errors.join(', ')}</span>
+                <span className="text-red-500 inline-block ml-5 mt-2">{state.errors.join(', ')}</span>
             </MessageDialog>
             <Card className="dashboard-first-column">
                 <CardHeader className="bg-blue-50 py-2 shadow">
@@ -156,13 +169,14 @@ export default function JobList({ jobs, hideTools = false }: JobListProps) {
                                                     )}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (job.scanned || job.inProgress || jobPendingScan) return;
+                                                        if (job.scanned || job.inProgress || state.jobPendingScan)
+                                                            return;
                                                         handleScanJob(job.id);
                                                     }}
                                                     disabled={job.scanned || job.inProgress}
                                                     asChild
                                                 >
-                                                    {jobPendingScan == job.id ? (
+                                                    {state.jobPendingScan == job.id ? (
                                                         <Loader className="text-green-600 animate-spin" />
                                                     ) : (
                                                         <Play

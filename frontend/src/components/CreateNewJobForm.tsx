@@ -20,14 +20,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import SubmitButton from '@/components/ui/submit';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { createNewJob } from '@/app/actions/manage-jobs';
 import { makeFieldGuard, processServerFormErrors } from '@/lib/utils';
+import { JobsDashboardContext } from '@/app/contexts/JobsDashboard';
 
 export const NEW_JOB_ID = '4huIv6N3RgGS_uiL-Rb90';
 
-export default function CreateNewJobForm({ sources }: { sources: string[] }) {
+export default function CreateNewJobForm() {
     const [errors, setErrors] = useState<string[]>([]);
+    const { sources } = useContext(JobsDashboardContext);
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();

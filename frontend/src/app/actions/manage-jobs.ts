@@ -104,7 +104,7 @@ async function loadJobsFromDB(name: string, inProgress: boolean = false): Promis
         let errors: string[] = [];
         let jobs: Job[] = [];
 
-        if (response.errors?.values && !response.jobs) {
+        if (response.errors?.values) {
             logger.error(logId, corrId, `errors loading job from gRPC: ${response.errors.values?.join(', ')}}`);
             errors = response.errors.values.map((e) => e.message ?? `${e}`);
         }
@@ -199,12 +199,6 @@ export async function createNewJob(
         logger.error(logId, corrId, 'error creating new job', message);
         return { errors: ['Server error creating new job.', message] };
     }
-}
-
-export async function getJob(id: string): Promise<{ job?: Job; errors?: string[] }> {
-    // TODO: connect to API
-    const job = jobs.find((j) => j.id === id);
-    return { job, errors: job !== undefined ? ['job not found'] : undefined };
 }
 
 export async function deleteJob(id: string): Promise<{ errors?: string[] }> {
