@@ -32,7 +32,7 @@ service JobManagerController {
     rpc getImages(GetImagesRequest) returns (GetImagesResponse);
 
     // get actual image data for rendering and extracting data
-    rpc GetData(GetDataRequest) returns (stream GetDataResponse) {};
+    rpc getData(GetDataRequest) returns (stream GetDataResponse) {};
 }
 
 // ---------------------------

@@ -65,7 +65,7 @@ export default function JobDetail({ jobs }: JobDetailProps) {
         if (!selected) return;
         setState((prev) => ({ ...prev, deleteErrors: [], pendingDelete: true }));
         const { errors } = await deleteJob(selected);
-        if (errors) {
+        if (errors && errors.length > 0) {
             setState((prev) => ({ ...prev, pendingDelete: false, deleteErrors: errors }));
             return;
         }

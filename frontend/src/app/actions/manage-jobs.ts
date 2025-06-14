@@ -13,6 +13,8 @@ import { GetAvailableSourcesResponse } from '@/generated/jobmanager/GetAvailable
 import { CreateNewJobResponse } from '@/generated/jobmanager/CreateNewJobResponse';
 import { createNewJobSchema } from '@/schemas/CreateNewJob';
 import { normaliseErrorPath } from '@/lib/utils';
+import { DeleteJobResponse } from '@/generated/jobmanager/DeleteJobResponse';
+import { StartScanningJobResponse } from '@/generated/jobmanager/StartScanningJobResponse';
 
 export type Job = {
     id: string;
@@ -206,11 +208,39 @@ export async function getJob(id: string): Promise<{ job?: Job; errors?: string[]
 }
 
 export async function deleteJob(id: string): Promise<{ errors?: string[] }> {
-    // TODO: connect to API
-    const startLength = jobs.length;
-    jobs = jobs.filter((j) => j.id !== id);
-    revalidateTag(CacheTags.jobs);
-    return { errors: jobs.length === startLength ? ['job not found'] : undefined };
+    const logId = 'actions/manage-jobs/deleteJob';
+    const { errors, corrId } = await checkForAuthAndErrors(logId);
+
+    logger.info(logId, corrId, `deleting job: ${id}`);
+
+    if (errors.length > 0) return { errors };
+
+    try {
+        // delete job from gRPC service-jobs
+        const client = await JobManagerClient.getClient();
+        const metadata = await JobManagerClient.getRequestHeaders();
+        const response = await new Promise<DeleteJobResponse>((resolve, reject) => {
+            client.deleteJobAndAllData({ id }, metadata, (err, resp) => {
+                if (err) reject(err);
+                if (resp) resolve(resp);
+            });
+        });
+
+        let errors: string[] = [];
+
+        if (response.errors?.values) {
+            logger.error(logId, corrId, `errors deleting job via gRPC: ${response.errors.values?.join(', ')}}`);
+            errors = response.errors.values.map((e) => e.message ?? `${e}`);
+        }
+
+        revalidateTag(CacheTags.jobs);
+
+        return { errors };
+    } catch (error) {
+        const message = `${(error as Error)?.message ?? error}`;
+        logger.error(logId, corrId, 'error deleting job data', message);
+        return { errors: ['Server error deleting jobs.', message] };
+    }
 }
 
 export async function updateJob(
@@ -232,18 +262,46 @@ export async function updateJob(
 }
 
 export async function startJobScan(id: string): Promise<{ state?: 'in-progress' | 'completed'; errors?: string[] }> {
-    // TODO: connect to API
-    const job = jobs.find((j) => j.id === id);
-    if (!job) return { errors: ['job not found'] };
-    const index = jobs.indexOf(job);
-    jobs[index] = {
-        ...job,
-        scanned: false,
-        inProgress: true,
-    };
-    revalidateTag(CacheTags.jobs);
-    revalidateTag(CacheTags.progress);
-    return { state: 'in-progress' };
+    const logId = 'actions/manage-jobs/startJobScan';
+    const { errors, corrId } = await checkForAuthAndErrors(logId);
+
+    logger.info(logId, corrId, `start scan for job: ${id}`);
+
+    if (errors.length > 0) return { errors };
+
+    try {
+        // delete job from gRPC service-jobs
+        const client = await JobManagerClient.getClient();
+        const metadata = await JobManagerClient.getRequestHeaders();
+        const response = await new Promise<StartScanningJobResponse>((resolve, reject) => {
+            client.startScanningJob({ id }, metadata, (err, resp) => {
+                if (err) reject(err);
+                if (resp) resolve(resp);
+            });
+        });
+
+        let errors: string[] = [];
+        let state = '';
+
+        if (response.errors?.values) {
+            logger.error(logId, corrId, `errors scanning job via gRPC: ${response.errors.values?.join(', ')}}`);
+            errors = response.errors.values.map((e) => e.message ?? `${e}`);
+        }
+
+        if (response.state) {
+            state = response.state;
+            logger.debug(logId, corrId, `scanning state ${state} for job: ${id}`);
+        }
+
+        revalidateTag(CacheTags.jobs);
+        revalidateTag(CacheTags.progress);
+
+        return { errors };
+    } catch (error) {
+        const message = `${(error as Error)?.message ?? error}`;
+        logger.error(logId, corrId, 'error scanning job data', message);
+        return { errors: ['Server error scanning jobs.', message] };
+    }
 }
 
 export async function getScanSources(): Promise<{ sources: string[]; errors?: string[] }> {

@@ -130,7 +130,7 @@ const JobManagerController: JobManagerControllerHandlers = {
             handleServiceError(error, `get images for job: ${call.request.jobId}`, callback, logId);
         }
     },
-    GetData: async (call) => {
+    getData: async (call) => {
         const logId = loggerMeta('GetData');
         try {
             const { request, corrId } = await extractMetaData(call);
