@@ -47,8 +47,8 @@ export default async function runScanJob(
     // start file scanner and send state to user
     const state = await SourceController.scanSource(source, 30, async (info, completed) => {
         if (completed) {
-            pStore.completeFileScan(jobId);
             await waitForImageUpdats(jobId);
+            pStore.completeFileScan(jobId);
             const { jpegs, pngs } = await getImageStatsForJob(jobId);
             await updateJobProgress(jobId, true, true, { jpegs, pngs });
 

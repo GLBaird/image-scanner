@@ -137,11 +137,11 @@ export default function JobDetail() {
                                         </li>
                                         <li>
                                             <strong className="inline-block w-20">JPEGs:</strong>
-                                            {selectedJob.jpeg}
+                                            {selectedJob.jpegs}
                                         </li>
                                         <li>
                                             <strong className="inline-block w-20">PNGs:</strong>
-                                            {selectedJob.png}
+                                            {selectedJob.pngs}
                                         </li>
                                     </ul>
                                 </div>

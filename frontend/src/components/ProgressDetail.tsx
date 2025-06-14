@@ -3,24 +3,19 @@
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Job } from '@/app/actions/manage-jobs';
-import React, { useContext, useState } from 'react';
-import { Loader2 as Loader } from 'lucide-react';
+import React, { useContext } from 'react';
+import { Loader2 as Loader, X as Close } from 'lucide-react';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { JobsDashboardContext } from '@/app/contexts/JobsDashboard';
-
-type ScanInfo = {
-    info?: string;
-    files: number;
-    images: number;
-    jpegs: number;
-    pngs: number;
-};
+import { EnvVariables, getEnv } from '@/envs';
+import { useSSE } from '@/app/hooks/useSSE';
+import { Button } from './ui/button';
+import Link from 'next/link';
 
 type StageInfo = {
     name: string;
-    file: string;
+    info: string;
     progress: number;
     total: number;
 };
@@ -28,9 +23,13 @@ type StageInfo = {
 type ProgressState = {
     started: boolean;
     filesScanned: boolean;
-    scanInfo?: ScanInfo;
     stages: StageInfo[];
     errors: string[];
+    info?: string;
+    files: number;
+    images: number;
+    jpegs: number;
+    pngs: number;
 };
 
 const initialState: ProgressState = {
@@ -38,6 +37,11 @@ const initialState: ProgressState = {
     filesScanned: false,
     stages: [],
     errors: [],
+    info: '',
+    files: 0,
+    images: 0,
+    jpegs: 0,
+    pngs: 0,
 };
 
 const WaitingForScanToStart = () => (
@@ -51,16 +55,14 @@ const WaitingForScanToStart = () => (
 );
 
 const FileScanUpdate = ({ state }: { state: ProgressState }) => {
-    if (!state.scanInfo) {
+    if (state.files === 0) {
         return (
             <div>
                 <Loader className="animate-spin" /> Waiting for file scanning data...
             </div>
         );
     }
-    const {
-        scanInfo: { info, files, images, jpegs, pngs },
-    } = state;
+    const { info, files, images, jpegs, pngs } = state;
 
     return (
         <div>
@@ -103,10 +105,10 @@ const StageScanUpdate = ({ state }: { state: ProgressState }) => {
             <h3>Extracting Image Data...</h3>
             <p>Currently running images through different data extraction stages:</p>
             <ul>
-                {stages.map(({ name, file, progress, total }) => (
+                {stages.map(({ name, info, progress, total }) => (
                     <li key={name} className="border-2 mt-4">
                         <h4 className="font-bold bg-gray-50 px-3 py-2 mt-0 mb-2">{name}</h4>
-                        <p className="mx-5 my-2">Processing: {file}</p>
+                        <p className="mx-5 my-2">Processing: {info}</p>
                         <div className="flex justify-stretch items-center mx-5 mb-5">
                             {0}
                             <div className="h-5 bg-gradient-to-tr from-cyan-300 to-blue-400 mx-2 grow flex justify-end shadow-blue-950 shadow-xs">
@@ -124,21 +126,21 @@ const StageScanUpdate = ({ state }: { state: ProgressState }) => {
     );
 };
 
-function getUpdatesUI(state: ProgressState): React.ReactNode {
-    if (!state.started || (!state.filesScanned && !state.scanInfo)) {
+function getUpdatesUI(state: ProgressState | null): React.ReactNode {
+    if (state === null || !state.started || state.files === 0) {
         return <WaitingForScanToStart />;
     }
-    if (!state.filesScanned && state.scanInfo) {
+    if (!state.filesScanned && state.files > 0) {
         return <FileScanUpdate state={state} />;
     }
 
     return <StageScanUpdate state={state} />;
 }
 
+const sseUrl = getEnv(EnvVariables.sseUrl);
+
 export default function ProgressDetail() {
-    const [state, setState] = useState<ProgressState>(initialState);
     const { jobs } = useContext(JobsDashboardContext);
-    const { errors } = state;
 
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -147,7 +149,10 @@ export default function ProgressDetail() {
     const selected = searchParams.get('selected');
     const selectedJob = selected ? jobs.filter((j) => j.id === selected).pop() : null;
 
-    // TODO: get initial progress update and connect to SSE for updates...
+    const sseEvent = selectedJob ? `${sseUrl}/${selectedJob.id}` : '';
+
+    const state = useSSE<ProgressState | null>(sseEvent);
+    const { errors } = state ?? { errors: [] };
 
     return (
         <>
@@ -157,7 +162,18 @@ export default function ProgressDetail() {
                 </CardHeader>
                 <CardContent className="dashboard-detail-column-scroll overflow-y-auto overflow-x-hidden">
                     <div>
-                        {selectedJob && getUpdatesUI(state)}
+                        {selectedJob && (
+                            <>
+                                <div className="flex justify-between items-start">
+                                    <Button variant="link" className="p-0 -ml-4" asChild>
+                                        <Link href={pathname}>
+                                            <Close />
+                                        </Link>
+                                    </Button>
+                                </div>
+                                {getUpdatesUI(state)}
+                            </>
+                        )}
                         {errors.length > 0 && (
                             <div>
                                 <Accordion type="single" collapsible>

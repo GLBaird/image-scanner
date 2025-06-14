@@ -52,7 +52,7 @@ class ProgressStore {
     private jobProgress: Map<string, JobProgress> = new Map();
     /** stage progress info for each job @private */
     private stageProgress: Map<string, StageProgress> = new Map();
-    /** tasks progress infor for each job to minitor completeness @private */
+    /** tasks progress info for each job to monitor completeness @private */
     private jobTasks: Map<string, number> = new Map();
 
     /** array of inflight jobs @private */

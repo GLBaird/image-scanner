@@ -38,6 +38,8 @@ export const EnvVariables = {
     grpcDomain: { ref: 'GRPC_DOMAIN', default: '0.0.0.0' },
     /** @description port for gRPC service JobManager */
     grpcPort: { ref: 'GRPC_PORT', default: '5042' },
+    /** URL for Server Side Events for progress updates. Port 4042 for http and 4043 for https / prod */
+    sseUrl: { ref: 'SSE_URL', default: 'http://localhost:4042/events' },
 };
 
 /**
