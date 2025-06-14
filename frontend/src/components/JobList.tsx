@@ -62,9 +62,11 @@ export default function JobList({ jobs, hideTools = false }: JobListProps) {
                 <CardHeader className="bg-blue-50 py-2 shadow">
                     <div className="flex justify-between items-center">
                         <h2 className="m-0">Current Jobs:</h2>
-                        <Button className="size-8 bg-white" variant="outline" onClick={handleAddJob}>
-                            <Plus />
-                        </Button>
+                        {!hideTools && (
+                            <Button className="size-8 bg-white" variant="outline" onClick={handleAddJob}>
+                                <Plus />
+                            </Button>
+                        )}
                     </div>
                 </CardHeader>
                 <CardContent className="p-0 mt-1 scroll-container">

@@ -73,11 +73,11 @@ async function checkForAuthAndErrors(logId: string, values?: unknown[]): Promise
     return { errors, corrId };
 }
 
-export const getJobs = cache(async (): Promise<{ jobs: Job[]; errors?: string[] }> => {
-    const logId = 'actions/manage-jobs/getJobs';
+async function loadJobsFromDB(name: string, inProgress: boolean = false): Promise<{ jobs: Job[]; errors?: string[] }> {
+    const logId = `actions/manage-jobs/${name}`;
     const { errors, corrId } = await checkForAuthAndErrors(logId);
 
-    logger.info(logId, corrId, 'loading jobs');
+    logger.info(logId, corrId, inProgress ? 'loading jobs in progress' : 'loading jobs');
 
     if (errors.length > 0) return { errors, jobs: [] };
 
@@ -86,6 +86,13 @@ export const getJobs = cache(async (): Promise<{ jobs: Job[]; errors?: string[] 
         const client = await JobManagerClient.getClient();
         const metadata = await JobManagerClient.getRequestHeaders();
         const response = await new Promise<GetJobsResponse>((resolve, reject) => {
+            if (inProgress) {
+                client.getAllJobsInProgress({ items: 200 }, metadata, (err, resp) => {
+                    if (err) reject(err);
+                    if (resp) resolve(resp);
+                });
+                return;
+            }
             client.getAllJobs({ items: 200 }, metadata, (err, resp) => {
                 if (err) reject(err);
                 if (resp) resolve(resp);
@@ -116,12 +123,14 @@ export const getJobs = cache(async (): Promise<{ jobs: Job[]; errors?: string[] 
         logger.error(logId, corrId, 'error loading job data', message);
         return { errors: ['Server error loading jobs.', message], jobs: [] };
     }
+}
+
+export const getJobs = cache(async (): Promise<{ jobs: Job[]; errors?: string[] }> => {
+    return await loadJobsFromDB('getJobs');
 });
 
 export const getJobsInProgress = cache(async (): Promise<{ jobs: Job[]; errors?: string[] }> => {
-    // TODO: connect to API
-    const progressJobs = jobs.filter((j) => j.inProgress && !j.scanned);
-    return { jobs: progressJobs };
+    return await loadJobsFromDB('getJobsInProgress', true);
 });
 
 export async function createNewJob(

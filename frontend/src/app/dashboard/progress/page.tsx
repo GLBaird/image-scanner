@@ -10,7 +10,7 @@ export const fetchCacheTags = [CacheTags.progress];
 export default async function DashboardProgress() {
     const { jobs, errors } = await getJobsInProgress();
 
-    if (errors) {
+    if (errors && errors.length > 0) {
         return (
             <main className="m-10">
                 <h2>Error</h2>
