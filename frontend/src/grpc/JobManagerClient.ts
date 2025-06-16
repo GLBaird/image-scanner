@@ -58,8 +58,8 @@ class JobManagerClient {
 
     private constructor() {}
 
-    public static async getRequestHeaders(): Promise<grpc.Metadata> {
-        const corrId = await getCorrId();
+    public static async getRequestHeaders(overrideCorrId?: string): Promise<grpc.Metadata> {
+        const corrId = overrideCorrId ?? await getCorrId();
         const token = await getAuthToken();
         const metaData = new grpc.Metadata();
         metaData.set('x-correlation-id', corrId);

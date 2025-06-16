@@ -151,7 +151,7 @@ export default function JobDetail() {
                             <div className="flex flex-wrap justify-center gap-5 mt-5">
                                 {selectedJob.scanned && !selectedJob.inProgress && (
                                     <Button asChild>
-                                        <Link href={`${Routes.GALLERY}?selected=${selectedJob.id}`}>
+                                        <Link href={`${Routes.GALLERY}/${selectedJob.id}`}>
                                             <Images />
                                             View Gallery
                                         </Link>

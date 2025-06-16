@@ -7,14 +7,14 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import Link from 'next/link';
 import Routes from '@/lib/routes';
-import { getJobs, getJobsInProgress, Job, startJobScan } from '@/app/actions/manage-jobs';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { startJobScan } from '@/app/actions/manage-jobs';
+import { useContext, useState } from 'react';
 import MessageDialog from './MessageDialog';
 import { setUrlParams } from '@/lib/url';
 import { NEW_JOB_ID } from '@/components/CreateNewJobForm';
 import { JobsDashboardContext } from '@/app/contexts/JobsDashboard';
+import Link from 'next/link';
 
 type JobListState = {
     errors: string[];
@@ -93,6 +93,7 @@ export default function JobList({ hideTools = false }: JobListProps) {
                                 )}
                                 role="button"
                                 onClick={(e) => {
+                                    if (e.target instanceof HTMLAnchorElement) return;
                                     e.preventDefault();
                                     handleSelectJob(job.id);
                                 }}
@@ -146,7 +147,7 @@ export default function JobList({ hideTools = false }: JobListProps) {
                                                     disabled={!job.scanned || job.inProgress}
                                                     asChild
                                                 >
-                                                    <Link href={`${Routes.GALLERY}?selected=${job.id}`}>
+                                                    <Link href={`${Routes.GALLERY}/${job.id}`}>
                                                         <Images
                                                             className={
                                                                 job.scanned || job.inProgress

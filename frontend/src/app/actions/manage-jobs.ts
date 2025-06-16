@@ -3,8 +3,6 @@
 import { revalidateTag } from 'next/cache';
 import { cache } from 'react';
 import CacheTags from '@/lib/cache-tags';
-import { auth } from '@/auth';
-import { getCorrId } from '@/lib/corr-id';
 import logger from '@/lib/logger';
 import JobManagerClient from '@/grpc/JobManagerClient';
 import { GetJobsResponse } from '@/generated/jobmanager/GetJobsResponse';
@@ -15,6 +13,7 @@ import { createNewJobSchema } from '@/schemas/CreateNewJob';
 import { normaliseErrorPath } from '@/lib/utils';
 import { DeleteJobResponse } from '@/generated/jobmanager/DeleteJobResponse';
 import { StartScanningJobResponse } from '@/generated/jobmanager/StartScanningJobResponse';
+import checkForAuthAndErrors from '@/lib/check-for-auth-errors';
 
 export type Job = {
     id: string;
@@ -28,36 +27,6 @@ export type Job = {
     scanned: boolean;
     inProgress: boolean;
 };
-
-/**
- * Checks for auth session and corrId, and if an array of required value are provide, will check
- * they are not undefined, null or empty strings.
- * @param logId     id needed for logging
- * @param values    array of values to check exist
- * @returns
- */
-async function checkForAuthAndErrors(logId: string, values?: unknown[]): Promise<{ errors: string[]; corrId: string }> {
-    const session = await auth();
-    const corrId = await getCorrId();
-    const errors = [];
-
-    if (!session) {
-        logger.warn(logId, corrId, 'user not authorised');
-        errors.push('User not authorised.');
-    }
-
-    if (!corrId) {
-        logger.warn(logId, corrId, 'request is missing CorrId');
-        errors.push('Request missing correct data.');
-    }
-
-    if (values && values.reduce((acc, val) => acc && typeof val !== 'number' && !val, false)) {
-        logger.warn(logId, corrId, 'request is missing required data');
-        errors.push('bad request, required data is missing.');
-    }
-
-    return { errors, corrId };
-}
 
 async function loadJobsFromDB(name: string, inProgress: boolean = false): Promise<{ jobs: Job[]; errors?: string[] }> {
     const logId = `actions/manage-jobs/${name}`;

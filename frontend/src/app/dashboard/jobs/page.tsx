@@ -29,7 +29,7 @@ export default async function DashboardJobs() {
                 <div className="w-full md:w-[43%]">
                     <JobList />
                 </div>
-                <JobsDetailChooser jobs={jobs} sources={sources} />
+                <JobsDetailChooser />
             </JobsDashboardContextProvider>
         </main>
     );
