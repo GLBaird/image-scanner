@@ -1,52 +1,62 @@
 version: '3.9'
 
 services:
-  postgres:
-    image: postgres:16-alpine  
-    container_name: postgres
-    restart: unless-stopped
+    postgres:
+        image: postgres:16-alpine
+        container_name: postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            # TZ: "UTC"  # Uncomment to set container timezone
+        volumes:
+            - ./db:/var/lib/postgresql/data
+        ports:
+            - '5432:5432'
+        # Health‑check so Docker Compose can wait for Postgres to be ready.
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U postgres']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - scanner
 
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      # TZ: "UTC"  # Uncomment to set container timezone
+    pgadmin:
+        image: dpage/pgadmin4:8
+        container_name: pgadmin
+        restart: unless-stopped
+        environment:
+            PGADMIN_DEFAULT_EMAIL: admin@example.com
+            PGADMIN_DEFAULT_PASSWORD: admin
+        volumes:
+            - ./pgadmin:/var/lib/pgadmin
+        ports:
+            - '5050:80'
+        depends_on:
+            - postgres
+        networks:
+            - scanner
 
-    volumes:
-      - ./db:/var/lib/postgresql/data
-
-    ports:
-      - "5432:5432"
-
-    # Health‑check so Docker Compose can wait for Postgres to be ready.
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-    networks:
-      - scanner
-
-  pgadmin:
-    image: dpage/pgadmin4:8  
-    container_name: pgadmin
-    restart: unless-stopped
-
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-
-    volumes:
-      - ./pgadmin:/var/lib/pgadmin
-
-    ports:
-      - "5050:80"
-
-    depends_on:
-      - postgres
-    networks:
-      - scanner
+    rabbitmq:
+        image: rabbitmq:3.12-management
+        container_name: rabbitmq
+        ports:
+            - '5672:5672' # AMQP protocol
+            - '15672:15672' # Management UI
+        environment:
+            RABBITMQ_DEFAULT_USER: admin
+            RABBITMQ_DEFAULT_PASS: secret
+        healthcheck:
+            test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        #volumes:
+        #- rabbitmq_data:/var/lib/rabbitmq
+        networks:
+            - scanner
 
 networks:
-  scanner:
-    driver: bridge
+    scanner:
+        driver: bridge

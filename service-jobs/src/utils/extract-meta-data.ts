@@ -18,7 +18,7 @@ export async function extractMetaData<T, I>(
 ): Promise<{
     request: T;
     corrId: string | undefined;
-    claims: JWTPayload;
+    claims: { payload: JWTPayload , raw: string };
 }> {
     const { request } = call;
     const corrId = getCorrId(call.metadata);

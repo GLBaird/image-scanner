@@ -23,6 +23,7 @@ export default async function runScanJob(
     request: StartScanningJobRequest,
     callback: sendUnaryData<StartScanningJobResponse>,
     corrId: string,
+    jweToken: string,
 ) {
     const logId = getLoggerMetaFactory('runScanJob')('', corrId);
     if (!request.id) {
@@ -53,7 +54,7 @@ export default async function runScanJob(
             await updateJobProgress(jobId, true, true, { jpegs, pngs });
 
             // hand over to extracting data with the different stages
-            await runDataExtraction(jobId);
+            await runDataExtraction(jobId, corrId, jweToken);
         }
         if (typeof info === 'string') {
             pStore.registerFileScanError(jobId, info);

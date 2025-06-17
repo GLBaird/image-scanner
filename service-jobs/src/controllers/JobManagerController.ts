@@ -22,7 +22,7 @@ const JobManagerController: JobManagerControllerHandlers = {
         try {
             const { request, corrId, claims } = await extractMetaData(call);
             logId.corrId = corrId;
-            const id = await createJob(request, claims.sub!);
+            const id = await createJob(request, claims.payload.sub!);
             callback(null, { id });
             logger.info(`created new job: ${id}`, logId);
         } catch (error) {
@@ -90,11 +90,11 @@ const JobManagerController: JobManagerControllerHandlers = {
     startScanningJob: async (call, callback) => {
         const logId = loggerMeta('startScanningJob');
         try {
-            const { request, corrId } = await extractMetaData(call);
+            const { request, corrId, claims } = await extractMetaData(call);
             logId.corrId = corrId;
 
             logger.info(`start running scan for job: ${request.id}`, logId);
-            await runScanJob(request, callback, corrId!);
+            await runScanJob(request, callback, corrId ?? '', claims.raw);
         } catch (error) {
             handleServiceError(
                 error,

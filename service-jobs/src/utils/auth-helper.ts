@@ -1,6 +1,7 @@
 import { ServerUnaryCall, Metadata } from '@grpc/grpc-js';
 import { encryptWithA256CBC_HS512, decryptWithA256CBC_HS512 } from './jwe';
 import config from '../configs/server';
+import { JWTPayload } from 'jose-node-cjs-runtime';
 
 export class AuthError extends Error {
     constructor(message = 'missing or invalid authentication') {
@@ -19,14 +20,16 @@ export class AuthError extends Error {
  * @returns {claims|null} – decoded JWT payload if valid = check for null as claims are invalid
  * @throws {AuthError} if token invalid or not found
  */
-export async function requireJwt(call: ServerUnaryCall<any, any>) {
+export async function requireJwt(
+    call: ServerUnaryCall<any, any>,
+): Promise<{ payload: JWTPayload; raw: string }> {
     const raw = ((call.metadata.get('authorization')[0] as string | undefined) ?? '').replace(
         /^Bearer\s+/i,
         '',
     );
     try {
         const { payload } = await decryptWithA256CBC_HS512(raw, config.auth.secret);
-        return payload;
+        return { payload, raw };
     } catch (err) {
         console.error('JWT decryption failed', err);
         throw new AuthError('missing or invalid token');

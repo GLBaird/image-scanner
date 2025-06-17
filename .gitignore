@@ -44,6 +44,9 @@ next-env.d.ts
 db
 pgadmin
 
+# rabbitmq data
+rabbitmq_data
+
 # job sources folder
 service-jobs/sources
 !service-jobs/source/.gitkeep

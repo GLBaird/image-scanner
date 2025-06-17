@@ -278,6 +278,20 @@ class ProgressStore {
     }
 
     /**
+     * Used to increment total number of tasks on a stage.
+     * Best to set when creating a stage, but if waiting for streaming data, can
+     * then set as data stream and incrememnt as needed
+     * @param jobId
+     * @param name
+     * @returns
+     */
+    public incrementStageCount(jobId: string, name: string, count: number = 1) {
+        const stage = this.stageProgress.get(this.makeStageRef(jobId, name));
+        if (!stage) return;
+        stage.total += count;
+    }
+
+    /**
      * Will update progress on each stage for UI updates and if entire job has completed.
      * Will return true if all tasks for a job have been done.
      * @param jobId
@@ -307,7 +321,7 @@ class ProgressStore {
      * @param error
      * @returns
      */
-    public registerStageError(jobId: string, stage: string, error: string) {
+public registerStageError(jobId: string, stage: string, error: string) {
         let stageProgress = this.stageProgress.get(this.makeStageRef(jobId, stage));
         if (!stageProgress) return;
         stageProgress.errors.push(error);
