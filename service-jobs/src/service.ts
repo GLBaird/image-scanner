@@ -4,7 +4,7 @@ import * as protoLoader from '@grpc/proto-loader';
 import { ProtoGrpcType } from './generated/service-jobs';
 import JobManagerController from './controllers/JobManagerController';
 import config from './configs/server';
-import logger, { getLoggerMetaFactory } from './logger';
+import logger, { getLoggerMetaFactory } from '../../service-shared/logger';
 import prisma from './prisma/client';
 import ServerSideEventEmitter from './controllers/ServerSideEventEmitter';
 import UIUpdatesController from './controllers/UIUpdatesController';

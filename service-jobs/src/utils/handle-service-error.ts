@@ -1,6 +1,6 @@
 import { Metadata, sendUnaryData, ServerWritableStream, status } from '@grpc/grpc-js';
 import { Writable } from 'stream';
-import logger from '../logger';
+import logger from '../../../service-shared/logger';
 import ServiceError from './ServiceError';
 import { AuthError } from './auth-helper';
 import { MissingCorrIdError } from './extract-meta-data';

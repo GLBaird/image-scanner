@@ -1,5 +1,5 @@
 import { Image } from '../generated/prisma';
-import logger, { getLoggerMetaFactory } from '../logger';
+import logger, { getLoggerMetaFactory } from '../../../service-shared/logger';
 import prisma from '../prisma/client';
 
 export async function countNumberOfTasksForFaceProcessing(jobId: string): Promise<number> {

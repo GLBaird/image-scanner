@@ -2,8 +2,8 @@ import ProgressStore from '../data-access/ProgressStore';
 import config from '../configs/server';
 import StageDataHandler, { StageHandler } from '../configs/stages_data';
 import { Image } from '../generated/prisma';
-import { RabbitMqMessageSender } from './RabbitMq';
-import logger from '../logger';
+import { RabbitMqMessageSender } from '../../../service-shared/rabbitMq';
+import logger from '../../../service-shared/logger';
 
 export default async function runDataExtraction(jobId: string, corrId: string, jweToken: string) {
     const pStore = ProgressStore.get();

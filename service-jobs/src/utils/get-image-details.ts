@@ -1,5 +1,5 @@
 import * as im from 'imagemagick';
-import logger from '../logger';
+import logger from '../../../service-shared/logger';
 
 export type ImageDetails = {
     width: number;

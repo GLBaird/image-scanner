@@ -1,6 +1,6 @@
 import { status } from '@grpc/grpc-js';
 import { GetImagesRequest } from '../generated/jobmanager/GetImagesRequest';
-import logger from '../logger';
+import logger from '../../../service-shared/logger';
 import prisma from '../prisma/client';
 import ServiceError from '../utils/ServiceError';
 import extractPageParamsFromRequest from '../utils/extract-page-params-from-request';

@@ -2,7 +2,7 @@ import { sendUnaryData, status } from '@grpc/grpc-js';
 import * as path from 'path';
 import { StartScanningJobRequest } from '../generated/jobmanager/StartScanningJobRequest';
 import { StartScanningJobResponse } from '../generated/jobmanager/StartScanningJobResponse';
-import logger, { getLoggerMetaFactory } from '../logger';
+import logger, { getLoggerMetaFactory } from '../../../service-shared/logger';
 import ServiceError from '../utils/ServiceError';
 import ProgressStore from '../data-access/ProgressStore';
 import { updateJobProgress } from '../data-access/Job';

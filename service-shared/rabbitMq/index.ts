@@ -1,6 +1,6 @@
 import * as ampq from 'amqplib';
 import logger, { getLoggerMetaFactory } from '../logger';
-import config from '../configs/server';
+import config from '../configs/config';
 
 const makeLoggerId = getLoggerMetaFactory('RabbitMQConnection');
 const connInfo = { ...config.rabbitMq.connectSettings };
@@ -113,9 +113,7 @@ export class RabbitMqMessageReceiver extends RabbitMqConnectionManager {
         this.autoAcknowledge = autoAcknowledge;
     }
 
-    async getMessagesOnQueue<T>(
-        callback: (message: RabbitMqMessage<T>, messageSource: ampq.ConsumeMessage) => void,
-    ) {
+    async getMessagesOnQueue<T>(callback: (message: RabbitMqMessage<T>, messageSource: ampq.ConsumeMessage) => void) {
         if (!this.connection.isConnected()) {
             await this.connection.connect();
         }
@@ -128,10 +126,7 @@ export class RabbitMqMessageReceiver extends RabbitMqConnectionManager {
             const parsedMessage: RabbitMqMessage<T> = JSON.parse(message.content.toString());
             callback(parsedMessage, message);
             if (this.autoAcknowledge && this.connection.isConnected()) {
-                logger.debug(
-                    `auto acknowledging message ${parsedMessage.to} / ${parsedMessage.from}`,
-                    logId,
-                );
+                logger.debug(`auto acknowledging message ${parsedMessage.to} / ${parsedMessage.from}`, logId);
                 this.connection.channel!.ack(message);
             }
         });
@@ -140,9 +135,8 @@ export class RabbitMqMessageReceiver extends RabbitMqConnectionManager {
     async acknowledgeMessageReceipt(message: ampq.ConsumeMessage) {
         if (!this.isConnected()) await this.connection.connect();
         this.connection.channel!.ack(message);
-        logger.debug(
-            `message ${message.fields.consumerTag}/${message.fields.deliveryTag} acknowledged`,
-            { id: 'RabbitMQMessageReceiver/acknowledgeMessageReceipt' },
-        );
+        logger.debug(`message ${message.fields.consumerTag}/${message.fields.deliveryTag} acknowledged`, {
+            id: 'RabbitMQMessageReceiver/acknowledgeMessageReceipt',
+        });
     }
 }

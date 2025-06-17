@@ -3,7 +3,7 @@ import {
     RabbitMqConnection,
     RabbitMqMessageReceiver,
     RabbitMqMessageSender,
-} from '../src/controllers/RabbitMq';
+} from '../../service-shared/rabbitMq';
 import config from '../src/configs/server';
 
 describe('will test rabbit mq helpers', function () {

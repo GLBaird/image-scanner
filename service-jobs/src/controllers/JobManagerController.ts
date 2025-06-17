@@ -1,5 +1,5 @@
 import { JobManagerControllerHandlers } from '../generated/jobmanager/JobManagerController';
-import logger, { getLoggerMetaFactory } from '../logger';
+import logger, { getLoggerMetaFactory } from '../../../service-shared/logger';
 import { createJob, deleteJob, getAllJobs, getAllJobsInProgress } from '../data-access/Job';
 import { toTimestamp } from '../utils/timestamp';
 import { Job } from '../generated/jobmanager/Job';

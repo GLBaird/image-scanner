@@ -5,7 +5,7 @@ import ServiceError from '../utils/ServiceError';
 import { Job } from '../generated/prisma';
 import { GetJobsRequest } from '../generated/jobmanager/GetJobsRequest';
 import { DeleteJobRequest } from '../generated/jobmanager/DeleteJobRequest';
-import logger from '../logger';
+import logger from '../../../service-shared/logger';
 import extractPageParamsFromRequest from '../utils/extract-page-params-from-request';
 
 /**

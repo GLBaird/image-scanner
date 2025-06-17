@@ -14,7 +14,7 @@ import {
     streamImageDataForFaceProcessing,
 } from '../data-access/Faces';
 import { Image } from '../generated/prisma';
-import logger from '../logger';
+import logger from '../../../service-shared/logger';
 
 export type ImageCallback = (image: Image) => void;
 export type StageHandler = {

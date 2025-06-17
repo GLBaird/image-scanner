@@ -1,10 +1,10 @@
 import { createLogger, transports, format } from 'winston';
-import config from '../configs/server';
+import config from '../configs/config';
 
 const logger = createLogger({
     level: config.logger.level,
     format: format.combine(format.timestamp(), format.json()),
-    defaultMeta: { service: 'job-manager' },
+    defaultMeta: { service: config.logger.serviceName },
     transports: [
         new transports.File({
             filename: config.logger.errorLog,

@@ -10,7 +10,7 @@ import * as https from 'https';
 import * as cors from 'cors';
 import { EventEmitter } from 'events';
 import config from '../configs/server';
-import logger, { getLoggerMetaFactory } from '../logger';
+import logger, { getLoggerMetaFactory } from '../../../service-shared/logger';
 
 const key = fs.readFileSync(__dirname + '/../../certs/server.key');
 const cert = fs.readFileSync(__dirname + '/../../certs/server.crt');

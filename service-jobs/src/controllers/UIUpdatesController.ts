@@ -1,4 +1,4 @@
-import logger, { getLoggerMetaFactory } from '../logger';
+import logger, { getLoggerMetaFactory } from '../../../service-shared/logger';
 import ProgressUpdatesController, { ProgressUpdate } from './ProgressUpdatesController';
 import ServerSideEventEmitter, { ServerSideEventListener } from './ServerSideEventEmitter';
 

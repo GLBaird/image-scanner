@@ -1,7 +1,7 @@
 import { ServerWritableStream } from '@grpc/grpc-js/build/src/server-call';
 import { status } from '@grpc/grpc-js';
 import * as path from 'path';
-import logger, { getLoggerMetaFactory } from '../logger';
+import logger, { getLoggerMetaFactory } from '../../../service-shared/logger';
 import { createReadStream, existsSync } from 'fs';
 import { GetDataRequest } from '../generated/jobmanager/GetDataRequest';
 import { GetDataResponse } from '../generated/jobmanager/GetDataResponse';
