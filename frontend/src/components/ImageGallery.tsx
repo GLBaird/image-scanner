@@ -4,7 +4,6 @@ import { Camera, Images, LayoutDashboard, Loader, Map, Minus, Plus, UserRound } 
 import { Slider } from './ui/slider';
 import { useMemo, useContext, useState, useEffect, useRef } from 'react';
 import { END_OF_DATA_MARK, ImagesContext } from '@/app/contexts/images';
-import Image from 'next/image';
 import { useElementSize } from '@/app/hooks/useElementSize';
 import { calculateRowLayout, SizedImage } from '@/lib/size-images';
 import { useInView } from '@/app/hooks/useInView';
@@ -61,7 +60,7 @@ export default function ImageGallery() {
 
     // handle realtime resize of slider, unless more than 600 images in galler, then only updates 100ms after slider is still
     useEffect(() => {
-        if (images.length < 600) {
+        if (images.length < 2000) {
             setState((prev) => ({ ...prev, numberOfImagesPerRow: calcImagesPerRow(sliderValue) }));
             return;
         }
@@ -172,7 +171,7 @@ export default function ImageGallery() {
                                 <div className="bg-gray-900" style={{ width: image.width, height: image.height }} />
                             )}
                             {image.source !== '__padding' && (
-                                <Image
+                                <img
                                     src={`/api/images${image.source}`}
                                     className="mx-0"
                                     style={{
@@ -190,7 +189,6 @@ export default function ImageGallery() {
                                             loadedImages: [...prev.loadedImages, index],
                                         }))
                                     }
-                                    priority={index < 100}
                                     onClick={() => handleSelect(images[index].id)}
                                 />
                             )}
