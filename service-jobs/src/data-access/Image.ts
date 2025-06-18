@@ -134,6 +134,37 @@ export async function getImagesForJob(request: GetImagesRequest): Promise<Extend
     });
 }
 
+function shouldSwapDimensions(orientationLabel: string): boolean {
+    return orientationLabel.includes('90') || orientationLabel.includes('270');
+}
+
+function shouldSwapDimensionsByValue(orientation: number): boolean {
+    return [5, 6, 7, 8].includes(orientation);
+}
+
+/**
+ * Checks exif data to see if image needs rotating based on hardware orientation
+ * If image is not rotated, will result in distorted aspect ratio for image when
+ * viewed in image gallery.
+ * @param md5
+ * @param data
+ * @returns
+ */
 export async function checkImagesForExifRotation(md5: string, data: unknown) {
-    // TODO:
+    if (data === undefined || data === null || typeof data !== 'object') return;
+    const exifData = data as { Orientation: string | number | undefined };
+    const { Orientation } = exifData;
+    if (Orientation === undefined) return;
+    const needToSwap =
+        typeof Orientation === 'string'
+            ? shouldSwapDimensions(Orientation)
+            : shouldSwapDimensionsByValue(Orientation);
+    if (!needToSwap) return;
+    const image = await prisma.image.findUnique({ where: { md5 } });
+    if (!image) return;
+    logger.debug(`swapping image orientation: ${md5}`, { id: 'checkImagesForExifRotation' });
+    await prisma.image.update({
+        where: { md5 },
+        data: { width: image.height, height: image.width },
+    });
 }

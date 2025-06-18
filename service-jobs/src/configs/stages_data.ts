@@ -18,6 +18,7 @@ import { Image } from '../generated/prisma';
 import logger from '../../../service-shared/logger';
 import { RabbitMqMessageReceiver } from '../../../service-shared/rabbitMq';
 import { checkImagesForExifRotation } from '../data-access/Image';
+import ExifData from '../../../service-shared/rabbitMq/types/ExifData';
 
 export type ImageCallback = (image: Image) => void;
 export type DataBlock = {
@@ -60,7 +61,7 @@ const StageDataHandler = {
             });
             addExifDataFromProcessing(md5, data, corrId, message, receiver);
             // now we have exif data, check images for any rotated by hardware and swap w/h
-            checkImagesForExifRotation(md5, data);
+            checkImagesForExifRotation(md5, (data as ExifData).exifData);
         },
         async count(jobId: string, corrId: string) {
             const count = await countNumberOfTasksForExifProcessing(jobId);
