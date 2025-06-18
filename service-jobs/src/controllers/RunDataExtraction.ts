@@ -5,6 +5,7 @@ import { Image } from '../generated/prisma';
 import { RabbitMqMessageReceiver, RabbitMqMessageSender } from '../../../service-shared/rabbitMq';
 import sharedConfig from '../../../service-shared/configs/config';
 import logger, { getLoggerMetaFactory } from '../../../service-shared/logger';
+import { updateJobProgress } from '../data-access/Job';
 
 export default async function runDataExtraction(jobId: string, corrId: string, jweToken: string) {
     const pStore = ProgressStore.get();
@@ -82,6 +83,12 @@ export async function listenForDataExtractionUpdates() {
         logger.debug(`receiving info for ${jobId} on image: ${filepath}`);
         const stageHandler = StageDataHandler[stage] as StageHandler;
         stageHandler.addDataToStore({ corrId, md5, data: data.message, message, receiver });
-        pStore.updateForStage(jobId, stage, filepath);
+        const stageName = config.dataExtractionStages.find((des) => des.queueName === stage)?.name;
+        if (!stageName) return;
+        const completed = pStore.updateForStage(jobId, stageName, filepath);
+        if (completed) {
+            logger.info(`all tasks completed for job: ${jobId}`, logId);
+            await updateJobProgress(jobId, false, true);
+        }
     });
 }
