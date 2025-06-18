@@ -54,7 +54,7 @@ export default function UserAvatar({ name, email, image }: UserAvatarProps) {
                     </div>
                 </div>
                 <div
-                    className="relative h-12 w-12 rounded-full
+                    className="relative h-12 w-12 rounded-full cursor-pointer
                                 border-3 border-black overflow-hidden bg-white shadow
                                 hidden md:block"
                 >
@@ -62,7 +62,7 @@ export default function UserAvatar({ name, email, image }: UserAvatarProps) {
                 </div>
             </div>
             {open && (
-                <div className="absolute w-80 right-3 mt-6 hidden md:block z-50">
+                <div className="absolute w-80 right-3 mt-6 hidden md:block z-2000">
                     <div
                         className="border-20 border-transparent border-b-gray-100 md:border-b-white
                                     size-0 absolute right-8 -top-9.5"

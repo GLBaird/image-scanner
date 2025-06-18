@@ -69,7 +69,7 @@ const FileScanUpdate = ({ state }: { state: ProgressState }) => {
             <h3>Scanning source folder for files...</h3>
             <div className="ml-5">
                 <p className="my-5">
-                    <span className="font-bold w-30 inline-block">Current file:</span> ${info}
+                    <span className="font-bold w-30 inline-block">Current file:</span> {info}
                 </p>
                 <p>Scanning outcomes:</p>
                 <Table>

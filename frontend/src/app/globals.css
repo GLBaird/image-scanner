@@ -185,6 +185,10 @@ body {
     p {
         @apply text-base my-2;
     }
+
+    button, a {
+        @apply cursor-pointer;
+    }
 }
 
 @layer utilities {

@@ -103,25 +103,37 @@ export default function ImageGallery() {
             >
                 <div>
                     <Button onClick={() => handleModeChange('info')} variant="ghost" asChild>
-                        <div style={{ color: mode === 'info' ? undefined : 'black' }} className="text-blue-700">
+                        <div
+                            style={{ color: mode === 'info' ? undefined : 'black' }}
+                            className="text-blue-700 cursor-pointer"
+                        >
                             <Images className="size-5 -mr-1" />
                             Image Information
                         </div>
                     </Button>
                     <Button onClick={() => handleModeChange('exif')} variant="ghost" asChild>
-                        <div style={{ color: mode === 'exif' ? undefined : 'black' }} className="text-blue-700">
+                        <div
+                            style={{ color: mode === 'exif' ? undefined : 'black' }}
+                            className="text-blue-700 cursor-pointer"
+                        >
                             <Camera className="size-5 -mr-1" />
                             Exif-Data
                         </div>
                     </Button>
                     <Button onClick={() => handleModeChange('location')} variant="ghost" asChild>
-                        <div style={{ color: mode === 'location' ? undefined : 'black' }} className="text-blue-700">
+                        <div
+                            style={{ color: mode === 'location' ? undefined : 'black' }}
+                            className="text-blue-700 cursor-pointer"
+                        >
                             <Map className="size-5 -mr-1" />
                             Location
                         </div>
                     </Button>
                     <Button onClick={() => handleModeChange('faces')} variant="ghost" asChild>
-                        <div style={{ color: mode === 'faces' ? undefined : 'black' }} className="text-blue-700">
+                        <div
+                            style={{ color: mode === 'faces' ? undefined : 'black' }}
+                            className="text-blue-700 cursor-pointer"
+                        >
                             <UserRound className="size-5 -mr-1" />
                             Faces
                         </div>
