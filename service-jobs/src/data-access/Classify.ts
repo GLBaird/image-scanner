@@ -1,6 +1,8 @@
+import * as ampq from 'amqplib';
 import { Image } from '../generated/prisma';
 import logger, { getLoggerMetaFactory } from '../../../service-shared/logger';
 import prisma from '../prisma/client';
+import { RabbitMqMessageReceiver } from '../../../service-shared/rabbitMq';
 
 export async function countNumberOfTasksForClassificationProcessing(
     jobId: string,
@@ -67,16 +69,19 @@ export async function streamImageDataForClassificationProcessing(
 }
 
 let store: { md5: string; tags: string[] }[] = [];
+let messages: ampq.ConsumeMessage[] = [];
 let ref: NodeJS.Timeout | undefined = undefined;
 
-export function addClassifyDataFromProcessing(md5: string, data: any, corrId: string) {
+export function addClassifyDataFromProcessing(
+    md5: string,
+    data: any,
+    corrId: string,
+    message: ampq.ConsumeMessage,
+    receiver: RabbitMqMessageReceiver,
+) {
     const logId = getLoggerMetaFactory('addClassifyDataFromProcessing')(corrId);
-    try {
-        store.push({ md5, ...data });
-    } catch (error) {
-        logger.error(`Error storing classification data: ${error}`, logId);
-        return;
-    }
+    store.push({ md5, ...data });
+    messages.push(message);
     if (ref) return;
     ref = setInterval(async () => {
         if (store.length === 0) {
@@ -86,9 +91,13 @@ export function addClassifyDataFromProcessing(md5: string, data: any, corrId: st
         }
         const data = store;
         store = [];
+        const messagesToAcknowledge = messages;
+        messages = [];
         try {
             await prisma.classification.createMany({ data });
             logger.info(`Added ${data.length} classification data records`, logId);
+            // now we have stored the data, we can acknowledge messages have been processed from queue
+            messagesToAcknowledge.forEach((m) => receiver.acknowledgeMessageReceipt(m));
         } catch (error) {
             logger.error(`failed to cache classification data: ${error}`, logId);
         }

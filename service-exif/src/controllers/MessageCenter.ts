@@ -7,7 +7,8 @@ import {
 import logger from '../../../service-shared/logger';
 import config from '../config/server';
 import { handleMessageForImageExtraction } from './Workflow';
-import ImageData from '../types/ImageData';
+import ImageData from '../../../service-shared/rabbitMq/types/ImageData';
+import ExifData from '../../../service-shared/rabbitMq/types/ExifData';
 
 class MessageCenter {
     private serviceIsRunning = false;
@@ -43,15 +44,18 @@ class MessageCenter {
     async sendExifDataToJobManager(
         jobId: string,
         md5: string,
+        filepath: string,
         exifData: any,
         corrId: string,
         jweToken: string,
         errors: string[],
     ) {
         const messageData = { md5, exifData };
-        await this.sender.sendJsonMessage(
+        await this.sender.sendJsonMessage<ExifData>(
             config.jobManagerQueue,
             messageData,
+            filepath,
+            md5,
             jobId,
             corrId,
             jweToken,

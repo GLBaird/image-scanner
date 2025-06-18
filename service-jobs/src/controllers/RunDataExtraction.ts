@@ -2,8 +2,9 @@ import ProgressStore from '../data-access/ProgressStore';
 import config from '../configs/server';
 import StageDataHandler, { StageHandler } from '../configs/stages_data';
 import { Image } from '../generated/prisma';
-import { RabbitMqMessageSender } from '../../../service-shared/rabbitMq';
-import logger from '../../../service-shared/logger';
+import { RabbitMqMessageReceiver, RabbitMqMessageSender } from '../../../service-shared/rabbitMq';
+import sharedConfig from '../../../service-shared/configs/config';
+import logger, { getLoggerMetaFactory } from '../../../service-shared/logger';
 
 export default async function runDataExtraction(jobId: string, corrId: string, jweToken: string) {
     const pStore = ProgressStore.get();
@@ -25,7 +26,15 @@ export default async function runDataExtraction(jobId: string, corrId: string, j
             corrId,
             async (image: Image) => {
                 try {
-                    await messageCenter.sendJsonMessage(queueName, image, jobId, corrId, jweToken);
+                    await messageCenter.sendJsonMessage<Image>(
+                        queueName,
+                        image,
+                        image.source,
+                        image.md5,
+                        jobId,
+                        corrId,
+                        jweToken,
+                    );
                 } catch (err) {
                     logger.error(`failed to send message to: ${queueName} for job: ${jobId}`);
                     pStore.registerStageError(
@@ -48,4 +57,31 @@ export default async function runDataExtraction(jobId: string, corrId: string, j
     });
 
     await Promise.all(promises);
+}
+
+let receiver: RabbitMqMessageReceiver;
+
+export async function listenForDataExtractionUpdates() {
+    receiver = new RabbitMqMessageReceiver(sharedConfig.rabbitMq.serviceQueueName!);
+    receiver.getMessagesOnQueue(async (data, message) => {
+        const { jobId, errors, from: stage, md5, filepath } = data;
+        const corrId = message.properties.headers?.['x-correlation-id'];
+        const logId = getLoggerMetaFactory('RunDataExtractions')(
+            'listenForDataExtractionUpdates',
+            corrId,
+        );
+        const hasErrors = errors.length > 0;
+        const pStore = ProgressStore.get();
+        if (hasErrors) {
+            logger.error(
+                `errors received from ${stage} for job ${jobId}: ${errors.join(', ')}`,
+                logId,
+            );
+            errors.forEach((e) => pStore.registerStageError(jobId, stage, e));
+        }
+        logger.debug(`receiving info for ${jobId} on image: ${filepath}`);
+        const stageHandler = StageDataHandler[stage] as StageHandler;
+        stageHandler.addDataToStore({ corrId, md5, data: data.message, message, receiver });
+        pStore.updateForStage(jobId, stage, filepath);
+    });
 }

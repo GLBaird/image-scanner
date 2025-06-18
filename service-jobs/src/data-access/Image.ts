@@ -133,3 +133,7 @@ export async function getImagesForJob(request: GetImagesRequest): Promise<Extend
         include: { exifData: true, faces: true, classification: true },
     });
 }
+
+export async function checkImagesForExifRotation(md5: string, data: unknown) {
+    // TODO:
+}

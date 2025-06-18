@@ -1,6 +1,9 @@
 import { Image } from '../generated/prisma';
 import logger, { getLoggerMetaFactory } from '../../../service-shared/logger';
 import prisma from '../prisma/client';
+import * as ampq from 'amqplib';
+import { RabbitMqMessageReceiver } from '../../../service-shared/rabbitMq';
+import ExifData from '../../../service-shared/rabbitMq/types/ExifData';
 
 export async function countNumberOfTasksForExifProcessing(jobId: string): Promise<number> {
     try {
@@ -59,16 +62,19 @@ export async function streamImageDataForExifProcessing(
 }
 
 let store: { md5: string; exif: string }[] = [];
+let messages: ampq.ConsumeMessage[] = [];
 let ref: NodeJS.Timeout | undefined = undefined;
 
-export function addExifDataFromProcessing(md5: string, data: any, corrId: string) {
+export function addExifDataFromProcessing(
+    md5: string,
+    data: ExifData,
+    corrId: string,
+    message: ampq.ConsumeMessage,
+    receiver: RabbitMqMessageReceiver,
+) {
     const logId = getLoggerMetaFactory('addExifDataFromProcessing')(corrId);
-    try {
-        store.push({ md5, exif: JSON.stringify(data) });
-    } catch (error) {
-        logger.error(`Error stringifying json: ${error}`, logId);
-        return;
-    }
+    store.push({ md5, exif: JSON.stringify(data.exifData) });
+    messages.push(message);
     if (ref) return;
     ref = setInterval(async () => {
         if (store.length === 0) {
@@ -78,9 +84,13 @@ export function addExifDataFromProcessing(md5: string, data: any, corrId: string
         }
         const data = store;
         store = [];
+        const messagesToAcknowledge = messages;
+        messages = [];
         try {
             await prisma.exifData.createMany({ data });
             logger.info(`Added ${data.length} exif data records`, logId);
+            // now we have stored the data, we can acknowledge messages have been processed from queue
+            messagesToAcknowledge.forEach((m) => receiver.acknowledgeMessageReceipt(m));
         } catch (error) {
             logger.error(`failed to cache exif data: ${error}`, logId);
         }

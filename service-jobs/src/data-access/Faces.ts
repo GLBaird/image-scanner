@@ -1,6 +1,8 @@
+import * as ampq from 'amqplib';
 import { Image } from '../generated/prisma';
 import logger, { getLoggerMetaFactory } from '../../../service-shared/logger';
 import prisma from '../prisma/client';
+import { RabbitMqMessageReceiver } from '../../../service-shared/rabbitMq';
 
 export async function countNumberOfTasksForFaceProcessing(jobId: string): Promise<number> {
     try {
@@ -67,9 +69,16 @@ type FaceData = {
     height: number;
 };
 let store: FaceData[] = [];
+let messages: ampq.ConsumeMessage[] = [];
 let ref: NodeJS.Timeout | undefined = undefined;
 
-export function addFaceDataFromProcessing(md5: string, data: any, corrId: string) {
+export function addFaceDataFromProcessing(
+    md5: string,
+    data: any,
+    corrId: string,
+    message: ampq.ConsumeMessage,
+    receiver: RabbitMqMessageReceiver,
+) {
     const logId = getLoggerMetaFactory('addFaceDataFromProcessing')(corrId);
     try {
         const faceData: FaceData = { md5, ...data };
@@ -87,9 +96,13 @@ export function addFaceDataFromProcessing(md5: string, data: any, corrId: string
         }
         const data = store;
         store = [];
+        const messagesToAcknowledge = messages;
+        messages = [];
         try {
             await prisma.face.createMany({ data });
             logger.info(`Added ${data.length} face data records`, logId);
+            // now we have stored the data, we can acknowledge messages have been processed from queue
+            messagesToAcknowledge.forEach((m) => receiver.acknowledgeMessageReceipt(m));
         } catch (error) {
             logger.error(`failed to cache face data: ${error}`, logId);
         }

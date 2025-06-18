@@ -12,6 +12,8 @@ export type RabbitMqMessage<T> = {
     time: string;
     jobId: string;
     errors: string[];
+    filepath: string;
+    md5: string;
     message: T;
 };
 
@@ -80,6 +82,8 @@ export class RabbitMqMessageSender extends RabbitMqConnectionManager {
     async sendJsonMessage<T>(
         queueName: string,
         message: T,
+        filepath: string,
+        md5: string,
         jobId: string = '',
         corrId: string = '',
         jweToken: string = '',
@@ -90,8 +94,10 @@ export class RabbitMqMessageSender extends RabbitMqConnectionManager {
             await this.connection.connect();
         }
         const messageToSend: RabbitMqMessage<T> = {
-            from: originQueueName,
+            from: originQueueName!,
             to: queueName,
+            filepath,
+            md5,
             jobId,
             time: new Date().toISOString(),
             errors,

@@ -8,6 +8,7 @@ import logger, { getLoggerMetaFactory } from '../../service-shared/logger';
 import prisma from './prisma/client';
 import ServerSideEventEmitter from './controllers/ServerSideEventEmitter';
 import UIUpdatesController from './controllers/UIUpdatesController';
+import { listenForDataExtractionUpdates } from './controllers/RunDataExtraction';
 
 const PROTO_FILE = '../protos/service-jobs.proto';
 
@@ -45,6 +46,11 @@ function main() {
     const uuc = UIUpdatesController.get();
     if (uuc.serviceReady()) logger.info('UI Updates ready.', logId);
     else logger.error('UI updates have failed to initialise!', logId);
+
+    // establish link with RabbitMq and listen for data extraction updates
+    listenForDataExtractionUpdates().then(() =>
+        logger.info('Listening to rabbitmq for data updates', logId),
+    );
 }
 
 // launch service and error catch to disconnect from prisma

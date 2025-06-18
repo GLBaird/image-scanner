@@ -27,9 +27,12 @@ const config = {
         origin: 'http://localhost:3000',
     },
     dataExtractionStages: [
-        { name: 'Exif and Metadata Extraction', queueName: 'ExifExtractor' },
-        // { name: 'Face Recognition', queueName: 'Faces' },
-        // { name: 'Image Tag Classification', queueName: 'Classifier' },
+        {
+            name: 'Exif and Metadata Extraction',
+            queueName: process.env.RABBITMQ_EXIF_QUEUE || 'ExifExtractor',
+        },
+        // { name: 'Face Recognition', queueName: process.env.RABBITMQ_FACES_QUEUE || 'Faces' },
+        // { name: 'Image Tag Classification', queueName: process.env.RABBITMQ_CLASSIFIER_QUEUE || 'Classifier' },
     ],
     batchSizeStreaming: Number.parseInt(process.env.BATCH_SIZE_STREAMING || '1000', 10) ?? 1000,
     fileScan: {
@@ -38,7 +41,7 @@ const config = {
 };
 
 if (!config.db.dbUrl) {
-    throw new Error('Missing ENV Variables: DATABASE_URL -- must be set! See src/config/server.ts');
+    throw new Error('Missing ENV Variable: DATABASE_URL -- must be set! See src/config/server.ts');
 }
 
 export default config;
