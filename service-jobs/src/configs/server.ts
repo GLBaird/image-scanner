@@ -28,8 +28,8 @@ const config = {
     },
     dataExtractionStages: [
         { name: 'Exif and Metadata Extraction', queueName: 'ExifExtractor' },
-        { name: 'Face Recognition', queueName: 'Faces' },
-        { name: 'Image Tag Classification', queueName: 'Classifier' },
+        // { name: 'Face Recognition', queueName: 'Faces' },
+        // { name: 'Image Tag Classification', queueName: 'Classifier' },
     ],
     batchSizeStreaming: Number.parseInt(process.env.BATCH_SIZE_STREAMING || '1000', 10) ?? 1000,
     fileScan: {

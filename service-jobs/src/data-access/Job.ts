@@ -52,7 +52,7 @@ export async function getAllJobs(request: GetJobsRequest): Promise<Job[]> {
 export async function getAllJobsInProgress(request: GetJobsRequest): Promise<Job[]> {
     const { cursor, items, order } = extractPageParamsFromRequest(request);
     return await prisma.job.findMany({
-        where: { inProgress: true, scanned: false },
+        where: { inProgress: true },
         orderBy: { createdAt: order },
         ...(cursor && { cursor: { id: cursor }, skip: 1 }),
         take: items,

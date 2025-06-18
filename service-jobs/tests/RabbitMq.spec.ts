@@ -4,7 +4,7 @@ import {
     RabbitMqMessageReceiver,
     RabbitMqMessageSender,
 } from '../../service-shared/rabbitMq';
-import config from '../src/configs/server';
+import config from '../../service-shared/configs/config';
 
 describe('will test rabbit mq helpers', function () {
     this.timeout(5000);

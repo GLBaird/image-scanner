@@ -11,6 +11,7 @@ export type RabbitMqMessage<T> = {
     to: string;
     time: string;
     jobId: string;
+    errors: string[];
     message: T;
 };
 
@@ -82,6 +83,7 @@ export class RabbitMqMessageSender extends RabbitMqConnectionManager {
         jobId: string = '',
         corrId: string = '',
         jweToken: string = '',
+        errors: string[] = [],
         persistent: boolean = true,
     ) {
         if (!this.connection.isConnected()) {
@@ -92,6 +94,7 @@ export class RabbitMqMessageSender extends RabbitMqConnectionManager {
             to: queueName,
             jobId,
             time: new Date().toISOString(),
+            errors,
             message,
         };
         const jsonBuffer = Buffer.from(JSON.stringify(messageToSend));
@@ -123,11 +126,16 @@ export class RabbitMqMessageReceiver extends RabbitMqConnectionManager {
         this.connection.channel!.consume(this.queueName, (message) => {
             if (message === null) return;
             logger.info(`message received on queue: ${this.queueName}`, logId);
-            const parsedMessage: RabbitMqMessage<T> = JSON.parse(message.content.toString());
-            callback(parsedMessage, message);
-            if (this.autoAcknowledge && this.connection.isConnected()) {
-                logger.debug(`auto acknowledging message ${parsedMessage.to} / ${parsedMessage.from}`, logId);
-                this.connection.channel!.ack(message);
+            try {
+                const parsedMessage: RabbitMqMessage<T> = JSON.parse(message.content.toString());
+                callback(parsedMessage, message);
+                if (this.autoAcknowledge && this.connection.isConnected()) {
+                    logger.debug(`auto acknowledging message ${parsedMessage.to} / ${parsedMessage.from}`, logId);
+                    this.connection.channel!.ack(message);
+                }
+            } catch (error) {
+                logger.error(`error attempting to unpak message: ${error}`, logId);
+                this.connection.channel?.ack(message);
             }
         });
     }

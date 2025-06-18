@@ -15,7 +15,8 @@ import {
     addImageDataForJob,
     checkIfImageExistsAndAddJob,
     getImageStatsForJob,
-    waitForImageUpdats,
+    startUpdates,
+    waitForImageUpdates,
 } from '../data-access/Image';
 import pause from '../../tests/helpers/pause';
 
@@ -45,15 +46,20 @@ export default async function runScanJob(
 
     const { source } = job;
 
+    startUpdates();
+
     // start file scanner and send state to user
     const state = await SourceController.scanSource(source, 30, async (info, completed) => {
         if (completed) {
-            await waitForImageUpdats(jobId);
+            logger.debug(`completed scan for ${jobId}`, logId);
+            await waitForImageUpdates(jobId);
+            console.log('<======== COMPLETED ==========>');
             pStore.completeFileScan(jobId);
             const { jpegs, pngs } = await getImageStatsForJob(jobId);
             await updateJobProgress(jobId, true, true, { jpegs, pngs });
 
             // hand over to extracting data with the different stages
+            logger.debug(`starting data extraction stages for job ${jobId}`, logId);
             await runDataExtraction(jobId, corrId, jweToken);
         }
         if (typeof info === 'string') {

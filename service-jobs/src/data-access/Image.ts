@@ -44,7 +44,14 @@ export async function checkIfImageExistsAndAddJob(jobId: string, md5: string): P
     return true;
 }
 
-let pending: { jobId: string; data: ImageData }[] = [];
+let updatesInProgress = false;
+
+export function startUpdates() {
+    updatesInProgress = true;
+}
+
+type PendingData = { jobId: string; data: ImageData }[];
+let pending: PendingData = [];
 let ref: NodeJS.Timeout | undefined = undefined;
 /**
  * add new image for job, ensure the image does not already exist on system, otherwise will throw an error
@@ -54,18 +61,33 @@ let ref: NodeJS.Timeout | undefined = undefined;
  * @returns
  */
 export async function addImageDataForJob(jobId: string, data: ImageData): Promise<void> {
+    updatesInProgress = true;
     pending.push({ jobId, data });
     if (!ref) {
         ref = setInterval(async () => {
             if (pending.length === 0) {
                 clearInterval(ref);
                 ref = undefined;
+                updatesInProgress = false;
                 return;
             }
             const newImages = pending;
             pending = [];
+            const md5s: string[] = [];
+            const filteredImages: PendingData = [];
+            await Promise.all(
+                newImages.map(async (image) => {
+                    const imageExists = await checkIfImageExistsAndAddJob(
+                        image.jobId,
+                        image.data.md5,
+                    );
+                    if (imageExists || md5s.includes(image.data.md5)) return;
+                    md5s.push(image.data.md5);
+                    filteredImages.push(image);
+                }),
+            );
             const result = await prisma.image.createMany({
-                data: newImages.map((i) => ({ ...i.data, jobIds: { set: [i.jobId] } })),
+                data: filteredImages.map((i) => ({ ...i.data, jobIds: { set: [i.jobId] } })),
             });
             logger.info(`created ${result.count} images for job: ${jobId}`, {
                 id: 'addImagesForJob',
@@ -74,9 +96,9 @@ export async function addImageDataForJob(jobId: string, data: ImageData): Promis
     }
 }
 
-export async function waitForImageUpdats(jobId: string): Promise<void> {
-    while (pending.filter((item) => item.jobId === jobId).length > 0) {
-        await pause(1000);
+export async function waitForImageUpdates(jobId: string): Promise<void> {
+    while (updatesInProgress) {
+        await pause(5000);
     }
 }
 

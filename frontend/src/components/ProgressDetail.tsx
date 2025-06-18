@@ -47,7 +47,7 @@ const initialState: ProgressState = {
 const WaitingForScanToStart = () => (
     <div className="flex flex-col gap-3 justify-center items-center h-60">
         <div className="text-[1.3rem]">
-            Waiting for scan to initialise
+            Waiting for scan to initialise or progress update...
             <span className="animate-caret-blink">...</span>
         </div>
         <Loader className="animate-spin size-10" />
