@@ -31,7 +31,7 @@ const config = {
             name: 'Exif and Metadata Extraction',
             queueName: process.env.RABBITMQ_EXIF_QUEUE || 'ExifExtractor',
         },
-        // { name: 'Face Recognition', queueName: process.env.RABBITMQ_FACES_QUEUE || 'Faces' },
+        { name: 'Face Recognition', queueName: process.env.RABBITMQ_FACES_QUEUE || 'Faces' },
         // { name: 'Image Tag Classification', queueName: process.env.RABBITMQ_CLASSIFIER_QUEUE || 'Classifier' },
     ],
     batchSizeStreaming: Number.parseInt(process.env.BATCH_SIZE_STREAMING || '1000', 10) ?? 1000,
