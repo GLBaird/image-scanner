@@ -81,8 +81,9 @@ export function addFaceDataFromProcessing(
 ) {
     const logId = getLoggerMetaFactory('addFaceDataFromProcessing')(corrId);
     try {
-        const faceData: FaceData = { md5, ...data };
-        store.push(faceData);
+        const faces = data as any[];
+        faces.forEach((faceDetails) => store.push({ ...faceDetails, md5 } as FaceData));
+        logger.debug(`stored ${faces.length} faces for DB`);
     } catch (error) {
         logger.error(`failed to store data for face: ${md5}, ${error}`, logId);
         return;
