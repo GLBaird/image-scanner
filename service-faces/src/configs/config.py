@@ -14,6 +14,7 @@ class RabbitMqConnectionSettings(TypedDict):
 class RabbitMqSettings(TypedDict):
     connection_settings: RabbitMqConnectionSettings
     service_queue_name: str
+    job_manager_queue_name: str
 
 
 class LoggerSettings(TypedDict):
@@ -37,7 +38,7 @@ class Config(TypedDict):
     grpc: GrpcSettings
 
 
-default_format = "<green>[{time}]</green> <level>[{level}]</level> <blue>[{extra[id]}]</blue> <blue>[{extra[corrId]}]</blue> {message}"
+default_format = "<green>[{time}]</green> <level>[{level}]</level> <blue>[{extra[id]}]</blue> <blue>[{extra[corr_id]}]</blue> {message}"
 
 config: Config = {
     "rabbitmq": {
@@ -51,6 +52,9 @@ config: Config = {
         # This env variable must be set to define the name of this service on the queue
         # This resource is shared with multiple services, so the queuename for the service must be set
         "service_queue_name": os.environ.get("RABBIT_MQ_SERVICE_QUEUE_NAME", "Faces"),
+        "job_manager_queue_name": os.environ.get(
+            "RABBIT_MQ_JOB_MANAGER_QUEUE_NAME", "JobManager"
+        ),
     },
     "logger": {
         "combined_log": os.environ.get(
@@ -59,7 +63,8 @@ config: Config = {
         "error_log": os.environ.get("LOG_PATH_ERROR", "../logs/errors_{time}.log"),
         "level": os.environ.get("LOG_LEVEL", "DEBUG"),
         "format": os.environ.get(
-            "LOG_FORMAT", "[{time}] [{level}] [{extra[id]}] [{extra[corrId]}] {message}"
+            "LOG_FORMAT",
+            "[{time}] [{level}] [{extra[id]}] [{extra[corr_id]}] {message}",
         ),
         "stdout_format": os.environ.get("LOG_STDOUT_FORMAT", default_format),
         "retention": os.environ.get("LOG_RETENTION", "30 Days"),

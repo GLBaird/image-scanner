@@ -1,7 +1,9 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["*_spec.py"]
-
+filterwarnings = [
+    "ignore::UserWarning:.*face_recognition_models.*"
+]
 markers = [
     "asyncio: mark test as asyncio coroutine",
     "timeout: set timeout for test execution"

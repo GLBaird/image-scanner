@@ -28,6 +28,6 @@ def setup_logging():
     )
 
 
-def get_logger(id: str, corrId: str = ""):
-    contextual_logger = logger.bind(id=id, corrId=corrId)
+def get_logger(id: str, corr_id: str = ""):
+    contextual_logger = logger.bind(id=id, corr_id=corr_id)
     return contextual_logger
