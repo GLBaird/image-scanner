@@ -68,7 +68,7 @@ export async function streamImageDataForClassificationProcessing(
     }
 }
 
-let store: { md5: string; tags: string[] }[] = [];
+let store: { md5: string; tags: string }[] = [];
 let messages: ampq.ConsumeMessage[] = [];
 let ref: NodeJS.Timeout | undefined = undefined;
 

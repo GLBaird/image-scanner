@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Classification" ALTER COLUMN "tags" SET NOT NULL,
+ALTER COLUMN "tags" SET DATA TYPE TEXT;

@@ -113,7 +113,7 @@ message Image {
     string sha1 = 14;
     string exifData = 15;
     repeated FaceData faces = 16;
-    repeated string tags = 17;
+    string tags = 17;
 }
 
 message ImageList {

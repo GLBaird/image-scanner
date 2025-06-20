@@ -24,7 +24,7 @@ export type ImageData = {
 
 export type ExtendedImageData = ImageData & {
     exifData?: { exif: string } | null;
-    classification?: { tags: string[] } | null;
+    classification?: { tags: string } | null;
     faces?:
         | { hash: string; coordX: number; coordY: number; width: number; height: Number }[]
         | null;

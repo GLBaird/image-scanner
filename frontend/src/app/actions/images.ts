@@ -28,7 +28,7 @@ export type ImageData = {
     sha1: string;
     exifData: { [key: string]: string | number };
     faces: { hash: string; x: number; y: number; width: number; height: number }[];
-    tags: string[];
+    tags: string;
 };
 
 const parseJsonExifDataSafely = (

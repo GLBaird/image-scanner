@@ -77,7 +77,7 @@ model Face {
 
 model Classification {
     md5       String   @unique
-    tags      String[]
+    tags      String
     createdAt DateTime @default(now())
     image     Image    @relation(fields: [md5], references: [md5], onDelete: Cascade)
 
