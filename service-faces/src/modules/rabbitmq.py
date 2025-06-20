@@ -18,6 +18,7 @@ T = TypeVar("T")
 
 conn_info = config["rabbitmq"]["connection_settings"]
 origin_queue_name = config["rabbitmq"]["service_queue_name"]
+prefetch_limit = config["rabbitmq"]["prefetchLimit"]
 
 
 class RabbitMqMessage(BaseModel, Generic[T]):
@@ -51,6 +52,7 @@ class RabbitMqConnection:
             )
             self.connection = await aio_pika.connect_robust(**conn_info)
             self.channel = await self.connection.channel()
+            await self.channel.set_qos(prefetch_count=prefetch_limit)
             await self.channel.declare_queue(self.queue_name, durable=self.durable)
             logger.info("RabbitMQ Connection Established")
 
@@ -74,6 +76,10 @@ class RabbitMqConnectionManager:
     def __init__(self, queue_name: str, durable: bool = True):
         self.queue_name = queue_name
         self.connection = RabbitMqConnection(queue_name, durable)
+
+    async def connect(self):
+        if not self.connection.is_connected():
+            await self.connection.connect()
 
     def get_queue_name(self) -> str:
         return self.queue_name
@@ -111,6 +117,7 @@ class RabbitMqMessageSender(RabbitMqConnectionManager):
             errors=errors,
             message=message,
         )
+
         json_bytes = json.dumps(message_to_send.model_dump(by_alias=True)).encode(
             "utf-8"
         )

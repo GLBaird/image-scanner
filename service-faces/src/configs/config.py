@@ -15,6 +15,7 @@ class RabbitMqSettings(TypedDict):
     connection_settings: RabbitMqConnectionSettings
     service_queue_name: str
     job_manager_queue_name: str
+    prefetchLimit: int
 
 
 class LoggerSettings(TypedDict):
@@ -54,6 +55,9 @@ config: Config = {
         "service_queue_name": os.environ.get("RABBIT_MQ_SERVICE_QUEUE_NAME", "Faces"),
         "job_manager_queue_name": os.environ.get(
             "RABBIT_MQ_JOB_MANAGER_QUEUE_NAME", "JobManager"
+        ),
+        "prefetchLimit": parse_int(
+            os.environ.get("RABBIT_MQ_PREFETCH_LIMIT", "10"), 10
         ),
     },
     "logger": {

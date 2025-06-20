@@ -9,6 +9,7 @@ import { updateJobProgress } from '../data-access/Job';
 
 export default async function runDataExtraction(jobId: string, corrId: string, jweToken: string) {
     const pStore = ProgressStore.get();
+    const logId = { id: 'runDataExtraction' };
 
     const stages = config.dataExtractionStages;
 
@@ -17,7 +18,6 @@ export default async function runDataExtraction(jobId: string, corrId: string, j
         const taskCount = await stageHandler.count(jobId, corrId);
         pStore.startNewStage(jobId, name, taskCount);
         const messageCenter = new RabbitMqMessageSender(queueName);
-        const logId = { id: 'runDataExtraction' };
         logger.info(
             `starting to stream messages for stage: ${name} to: ${queueName} for job: ${jobId}`,
             logId,
@@ -54,15 +54,19 @@ export default async function runDataExtraction(jobId: string, corrId: string, j
             `completerd sending messages for stage: ${name} to queue: ${queueName} for jobId: ${jobId}`,
             logId,
         );
-        messageCenter.close();
+        await messageCenter.close();
     });
-
-    await Promise.all(promises);
+    try {
+        await Promise.all(promises);
+    } catch (error) {
+        logger.error(`error waiting for running stage data to rabbitmq: ${error}`, logId);
+    }
 }
 
-let receiver: RabbitMqMessageReceiver;
+let receiver: RabbitMqMessageReceiver | undefined;
 
 export async function listenForDataExtractionUpdates() {
+    if (receiver !== undefined) return;
     receiver = new RabbitMqMessageReceiver(sharedConfig.rabbitMq.serviceQueueName!);
     receiver.getMessagesOnQueue(async (data, message) => {
         const { jobId, errors, from: stage, md5, filepath } = data;
@@ -82,7 +86,8 @@ export async function listenForDataExtractionUpdates() {
         }
         logger.debug(`receiving info for ${jobId} on image: ${filepath}`);
         const stageHandler = StageDataHandler[stage] as StageHandler;
-        stageHandler.addDataToStore({ corrId, md5, data: data.message, message, receiver });
+        if (receiver !== undefined)
+            stageHandler.addDataToStore({ corrId, md5, data: data.message, message, receiver });
         const stageName = config.dataExtractionStages.find((des) => des.queueName === stage)?.name;
         if (!stageName) return;
         const completed = pStore.updateForStage(jobId, stageName, filepath);

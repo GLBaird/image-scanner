@@ -55,8 +55,8 @@ export default function ImageGallery() {
     }, [images, numberOfImagesPerRow, size.width]);
 
     const [sentinelRef, isVisible] = useInView<HTMLDivElement>({
-        rootMargin: '200px', // start loading a bit before it enters view
-        threshold: 0.1,
+        rootMargin: '500px', // start loading a bit before it enters view
+        threshold: 0.5,
     });
 
     const isImageLoaded = (index: number) => state.loadedImages.includes(index);
@@ -168,7 +168,7 @@ export default function ImageGallery() {
                         </div>
                     ))}
                 {/* Sentinel for prompting lazy loading of more images if scrolled into view */}
-                <div ref={sentinelRef} className="h-[1px]" />
+                {size.width > 0 && <div ref={sentinelRef} className="h-[1px]" />}
                 {/* Render Loading Error */}
                 {error && <div className="text-red-400 p-5">Error: {error}</div>}
                 {/* GALLERY LOADING MORE IMAGES SPINNER */}

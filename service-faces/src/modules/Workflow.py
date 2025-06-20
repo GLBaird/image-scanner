@@ -34,6 +34,8 @@ class Workflow:
         logger.info("connecting to gRPC JobManager service...")
         await self.jobManagerClient.connect()
         logger.info("connecting to rabbitMq...")
+        await self.sender.connect()
+        await self.receiver.connect()
         self._keep_alive = self.receiver.get_messages_on_queue(
             self.handle_incoming_message
         )
@@ -82,7 +84,7 @@ class Workflow:
                 jwe_token=jwe_token,
                 errors=[],
             )
-            message.ack()
+            await message.ack()
             logger.info(f"completed processing image {filepath} for job: {job_id}")
             return
         except grpc.RpcError as e:

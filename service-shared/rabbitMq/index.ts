@@ -40,6 +40,7 @@ export class RabbitMqConnection {
         this.connectingPromise = (async () => {
             const conn = await ampq.connect(connInfo);
             const ch = await conn.createChannel();
+            await ch.prefetch(config.rabbitMq.prefectLimit);
             await ch.assertQueue(this.queueName, { durable: this.durable });
 
             this.connection = conn;

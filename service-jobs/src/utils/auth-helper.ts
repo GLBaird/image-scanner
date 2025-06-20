@@ -2,6 +2,7 @@ import { ServerUnaryCall, Metadata } from '@grpc/grpc-js';
 import { encryptWithA256CBC_HS512, decryptWithA256CBC_HS512 } from './jwe';
 import config from '../configs/server';
 import { JWTPayload } from 'jose-node-cjs-runtime';
+import logger from '../../../service-shared/logger';
 
 export class AuthError extends Error {
     constructor(message = 'missing or invalid authentication') {
@@ -31,7 +32,7 @@ export async function requireJwt(
         const { payload } = await decryptWithA256CBC_HS512(raw, config.auth.secret);
         return { payload, raw };
     } catch (err) {
-        console.error('JWT decryption failed', err);
+        logger.error(`JWT decryption failed: ${err}`, { id: 'auth-helper/requireJwt' });
         throw new AuthError('missing or invalid token');
     }
 }

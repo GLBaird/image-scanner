@@ -2,14 +2,13 @@
   "name": "service-shared",
   "version": "1.0.0",
   "description": "Shared Service for image-scanner app.",
-  "main": "src/service.ts",
-  "scripts": {
-  },
+  "scripts": {},
   "keywords": [],
   "author": "leonbaird@mac.com",
   "license": "ISC",
   "devDependencies": {
-    "@types/amqplib": "^0.10.7"
+    "@types/amqplib": "^0.10.7",
+    "@types/node": "^24.0.3"
   },
   "dependencies": {
     "amqplib": "^0.10.8",

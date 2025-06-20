@@ -57,7 +57,7 @@ export default function GalleryOptions() {
                 </div>
             </Button>
             <Button onClick={() => handleModeChange('faces')} variant="ghost" asChild>
-                <Link href={Routes.DASHBOARD} className="text-[0.9em]">
+                <Link href={Routes.DASHBOARD_JOBS} className="text-[0.9em]">
                     <div className="flex gap-1 items-center">
                         <LayoutDashboard className="size-[1.6em]" />
                         Dashboard

@@ -16,6 +16,9 @@ devDependencies:
   '@types/amqplib':
     specifier: ^0.10.7
     version: 0.10.7
+  '@types/node':
+    specifier: ^24.0.3
+    version: 24.0.3
 
 packages:
 
