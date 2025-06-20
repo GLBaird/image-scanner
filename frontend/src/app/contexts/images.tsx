@@ -5,11 +5,15 @@ import { getBatchSize, getImages, ImageData } from '../actions/images';
 export type ImageContextData = {
     images: ImageData[];
     loadNextBatch: () => Promise<string | undefined>;
+    drawFaces: boolean;
+    changeDrawState: (state: boolean) => void;
 };
 
 export const ImagesContext = createContext<ImageContextData>({
     images: [],
     loadNextBatch: async () => undefined,
+    drawFaces: false,
+    changeDrawState: () => undefined,
 });
 
 export const END_OF_DATA_MARK = '__end_of_data_mark__';
@@ -17,6 +21,7 @@ export const END_OF_DATA_MARK = '__end_of_data_mark__';
 export type ImagesContextProviderProps = { jobId: string; images: ImageData[]; children: React.ReactNode };
 export default function ImagesContextProvider({ jobId, images, children }: ImagesContextProviderProps) {
     const [imageState, setImageState] = useState(images);
+    const [drawFaces, setDrawFaces] = useState(false);
 
     /** Returns a string if there is an error or end of data*/
     const loadNextBatch = async (): Promise<string | undefined> => {
@@ -32,5 +37,11 @@ export default function ImagesContextProvider({ jobId, images, children }: Image
         return undefined;
     };
 
-    return <ImagesContext value={{ images: imageState, loadNextBatch }}>{children}</ImagesContext>;
+    const changeDrawState = (state: boolean) => setDrawFaces(state);
+
+    return (
+        <ImagesContext value={{ images: imageState, loadNextBatch, drawFaces, changeDrawState }}>
+            {children}
+        </ImagesContext>
+    );
 }

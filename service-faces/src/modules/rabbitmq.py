@@ -39,18 +39,20 @@ class RabbitMqConnection:
         self.durable = durable
         self.connection: Optional[AbstractRobustConnection] = None
         self.channel: Optional[AbstractRobustChannel] = None
+        self._connect_lock = asyncio.Lock()
 
     async def connect(self):
         logger = get_logger("RabbitMqConnection/connect")
-        if self.connection and self.channel:
-            return
-        logger.info(
-            f"Connecting to RabbitMQ at {conn_info['host']}:{conn_info['port']} for queue {self.queue_name}"
-        )
-        self.connection = await aio_pika.connect_robust(**conn_info)
-        self.channel = await self.connection.channel()
-        await self.channel.declare_queue(self.queue_name, durable=self.durable)
-        logger.info("RabbitMQ Connection Established")
+        async with self._connect_lock:
+            if self.connection and self.channel:
+                return
+            logger.info(
+                f"Connecting to RabbitMQ at {conn_info['host']}:{conn_info['port']} for queue {self.queue_name}"
+            )
+            self.connection = await aio_pika.connect_robust(**conn_info)
+            self.channel = await self.connection.channel()
+            await self.channel.declare_queue(self.queue_name, durable=self.durable)
+            logger.info("RabbitMQ Connection Established")
 
     def is_connected(self) -> bool:
         return self.connection is not None and self.channel is not None
@@ -150,10 +152,6 @@ class RabbitMqMessageReceiver(RabbitMqConnectionManager):
             self.queue_name, durable=self.connection.durable
         )
 
-        # Setup a future to allow breaking after 1 message in tests
-        loop = asyncio.get_event_loop()
-        message_handled = loop.create_future()
-
         async def _consumer(message: aio_pika.IncomingMessage):
             logger.info(f"Message received on queue: {self.queue_name}")
             try:
@@ -164,17 +162,21 @@ class RabbitMqMessageReceiver(RabbitMqConnectionManager):
 
                 if self.auto_acknowledge:
                     await message.ack()
-
-                if not message_handled.done():
-                    message_handled.set_result(True)
-
             except Exception as e:
                 logger.error(f"Error processing message: {e}")
-                await message.ack()
+                # Always ack even on error to avoid retry loops
+                if not self.auto_acknowledge:
+                    await message.ack()
 
-        await queue.consume(_consumer, no_ack=self.auto_acknowledge)
+        await queue.consume(_consumer, no_ack=False)
 
+        # Keep the consumer alive
+        logger.info("Waiting for messages...")
         try:
-            await asyncio.wait_for(message_handled, timeout=3)
-        except asyncio.TimeoutError:
-            logger.warning("Timeout waiting for message")
+            while True:
+                await asyncio.sleep(1)
+        except asyncio.CancelledError:
+            logger.info("Consumer cancelled")
+        except Exception as e:
+            logger.error(f"Consumer crashed: {e}")
+            raise

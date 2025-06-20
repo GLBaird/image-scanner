@@ -29,7 +29,7 @@ export default function ImageLocation({ image }: { image: ImageData }) {
                 <Table cellSpacing={0} cellPadding={0}>
                     <TableBody>
                         <TableRow>
-                            <TableCell className="font-semibold">File:</TableCell>
+                            <TableCell className="font-semibold">Image:</TableCell>
                             <TableCell className="whitespace-nowrap text-ellipsis overflow-hidden mr-1">
                                 {image.filename}
                             </TableCell>

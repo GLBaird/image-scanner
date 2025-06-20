@@ -12,6 +12,7 @@ import { setUrlParams } from '@/lib/url';
 import { Button } from './ui/button';
 import Link from 'next/link';
 import Routes from '@/lib/routes';
+import FaceBoxes from './FaceBoxes';
 
 type ImageGalleryState = {
     loading: boolean;
@@ -36,7 +37,7 @@ const initialState: ImageGalleryState = {
 export default function ImageGallery() {
     const [ref, size] = useElementSize<HTMLDivElement>();
     const [state, setState] = useState<ImageGalleryState>(initialState);
-    const { images, loadNextBatch } = useContext(ImagesContext);
+    const { images, loadNextBatch, drawFaces } = useContext(ImagesContext);
     const { loading, sliderValue, error, endReached, numberOfImagesPerRow } = state;
     const debounceSliderRef = useRef<NodeJS.Timeout | undefined>(undefined);
     const scrollGap = images.length > 10 ? 12 : 0;
@@ -183,26 +184,29 @@ export default function ImageGallery() {
                                 <div className="bg-gray-900" style={{ width: image.width, height: image.height }} />
                             )}
                             {image.source !== '__padding' && (
-                                <img
-                                    src={`/api/images${image.source}`}
-                                    className="mx-0"
-                                    style={{
-                                        width: image.width,
-                                        height: image.height,
-                                        border: selected === images[index].id ? '2px solid red' : '',
-                                    }}
-                                    key={image.source}
-                                    width={image.width}
-                                    height={image.height}
-                                    alt={`gallery image: ${image.source}`}
-                                    onLoad={() =>
-                                        setState((prev) => ({
-                                            ...prev,
-                                            loadedImages: [...prev.loadedImages, index],
-                                        }))
-                                    }
-                                    onClick={() => handleSelect(images[index].id)}
-                                />
+                                <>
+                                    {drawFaces && <FaceBoxes image={images[index]} sizedImage={image} />}
+                                    <img
+                                        src={`/api/images${image.source}`}
+                                        className="mx-0"
+                                        style={{
+                                            width: image.width,
+                                            height: image.height,
+                                            border: selected === images[index].id ? '2px solid red' : '',
+                                        }}
+                                        key={image.source}
+                                        width={image.width}
+                                        height={image.height}
+                                        alt={`gallery image: ${image.source}`}
+                                        onLoad={() =>
+                                            setState((prev) => ({
+                                                ...prev,
+                                                loadedImages: [...prev.loadedImages, index],
+                                            }))
+                                        }
+                                        onClick={() => handleSelect(images[index].id)}
+                                    />
+                                </>
                             )}
                         </div>
                     ))}

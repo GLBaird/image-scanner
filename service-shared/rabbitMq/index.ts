@@ -19,6 +19,7 @@ export type RabbitMqMessage<T> = {
 
 export class RabbitMqConnection {
     connection?: ampq.ChannelModel;
+    private connectingPromise?: Promise<void>;
     channel?: ampq.Channel;
     queueName: string;
     durable: boolean;
@@ -31,14 +32,22 @@ export class RabbitMqConnection {
     async connect() {
         const logId = makeLoggerId('connect');
         if (this.connection && this.channel) return;
+        if (this.connectingPromise) return this.connectingPromise;
         logger.info(
             `connecting to RabbitMQ Channel: ${connInfo.hostname}: ${connInfo.port} for queue: ${this.queueName}`,
             logId,
         );
-        this.connection = await ampq.connect(connInfo);
-        this.channel = await this.connection.createChannel();
-        await this.channel.assertQueue(this.queueName, { durable: this.durable });
-        logger.info('RabbitMQ Connection Established', logId);
+        this.connectingPromise = (async () => {
+            const conn = await ampq.connect(connInfo);
+            const ch = await conn.createChannel();
+            await ch.assertQueue(this.queueName, { durable: this.durable });
+
+            this.connection = conn;
+            this.channel = ch;
+            logger.info('RabbitMQ Connection Established', logId);
+        })();
+        await this.connectingPromise;
+        this.connectingPromise = undefined;
     }
 
     isConnected(): boolean {
@@ -129,7 +138,7 @@ export class RabbitMqMessageReceiver extends RabbitMqConnectionManager {
         const logId = {
             id: 'RabbitMQMessageReceiver/getMessagesOnQueue',
         };
-        this.connection.channel!.consume(this.queueName, (message) => {
+        await this.connection.channel!.consume(this.queueName, (message) => {
             if (message === null) return;
             logger.info(`message received on queue: ${this.queueName}`, logId);
             try {

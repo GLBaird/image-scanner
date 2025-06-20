@@ -1,4 +1,3 @@
-import asyncio
 from aio_pika import IncomingMessage
 from aio_pika.exceptions import (
     ChannelClosed,
@@ -32,14 +31,14 @@ class Workflow:
 
     async def start_receiving_messages(self):
         logger = get_logger("Workflow/start_receiving_messages")
-        logger.info("connecting to rabbitMq...")
-        await self.receiver.get_messages_on_queue(self.handle_incoming_message)
         logger.info("connecting to gRPC JobManager service...")
         await self.jobManagerClient.connect()
+        logger.info("connecting to rabbitMq...")
+        self._keep_alive = self.receiver.get_messages_on_queue(
+            self.handle_incoming_message
+        )
         logger.info("rabbitMq and gRPC services connected")
-
-        self._keep_alive = asyncio.Event()
-        await self._keep_alive.wait()
+        await self._keep_alive
 
     async def stop_processing(self):
         logger = get_logger("Workflow/stop_processing")
@@ -64,7 +63,7 @@ class Workflow:
         logger.info(f"handling incoming message from {data.from_} for image {filepath}")
         if corr_id is None or jwe_token is None:
             await self.reject_message(
-                "bad request, no credentials provided",
+                reason="bad request, no credentials provided",
                 data=data,
                 message=message,
                 corr_id=corr_id,
@@ -99,7 +98,9 @@ class Workflow:
         except Exception as e:
             reason = f"Unexpected error in face detection: {e}"
         logger.error(reason)
-        await self.reject_message(reason, data=data, message=message, corr_id=corr_id)
+        await self.reject_message(
+            reason, data=data, message=message, corr_id=corr_id, jwe_token=jwe_token
+        )
 
     async def reject_message(
         self,

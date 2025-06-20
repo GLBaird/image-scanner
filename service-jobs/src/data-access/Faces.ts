@@ -82,10 +82,32 @@ export function addFaceDataFromProcessing(
     const logId = getLoggerMetaFactory('addFaceDataFromProcessing')(corrId);
     try {
         const faces = data as any[];
+        if (
+            faces === undefined ||
+            faces === null ||
+            !faces ||
+            !Array.isArray(faces) ||
+            faces.length === 0
+        ) {
+            logger.warn(`received no usable face data for ${md5} - ${data}`, logId);
+            receiver.acknowledgeMessageReceipt(message);
+            return;
+        }
         faces.forEach((faceDetails) => store.push({ ...faceDetails, md5 } as FaceData));
+        messages.push(message);
         logger.debug(`stored ${faces.length} faces for DB`);
     } catch (error) {
         logger.error(`failed to store data for face: ${md5}, ${error}`, logId);
+        // acknowledge message as could cause error loop
+        if (messages.includes(message)) {
+            const index = messages.indexOf(message);
+            messages.splice(index, 1);
+        }
+        try {
+            receiver.acknowledgeMessageReceipt(message);
+        } catch (e) {
+            logger.error(`unable to acknowledge faulty message ${error}`, logId);
+        }
         return;
     }
     if (ref) return;
