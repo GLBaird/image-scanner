@@ -8,6 +8,8 @@ export type GalleryImageProps = {
     selected: boolean;
 };
 const GalleryImage = ({ image, id, onClick, onLoad, selected }: GalleryImageProps) => (
+    // Using Image or managed image tag severely degrades gallery performance
+    // eslint-disable-next-line @next/next/no-img-element
     <img
         src={`/api/images${image.source}`}
         className="mx-0"

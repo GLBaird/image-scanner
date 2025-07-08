@@ -1,0 +1,15 @@
+FROM node:20.10-slim
+
+RUN npm install -g pnpm
+
+COPY frontend /app
+COPY service-jobs/protos/service-jobs.proto /app/src/grpc/protos/service-jobs.proto 
+
+WORKDIR /app
+
+RUN pnpm install --fix-lockfile --prefer-offline
+RUN bash proto-gen.sh
+
+RUN pnpm run build
+
+CMD ["pnpm", start]

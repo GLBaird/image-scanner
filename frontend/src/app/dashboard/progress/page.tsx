@@ -1,12 +1,8 @@
 import JobList from '@/components/JobList';
 import ProgressDetail from '@/components/ProgressDetail';
 import { getJobsInProgress } from '@/app/actions/manage-jobs';
-import CacheTags from '@/lib/cache-tags';
 import ErrorsList from '@/components/ErrorsList';
 import JobsDashboardContextProvider from '@/app/contexts/JobsDashboard';
-
-export const revalidate = 300;
-export const fetchCacheTags = [CacheTags.progress];
 
 export default async function DashboardProgress() {
     const { jobs, errors } = await getJobsInProgress();

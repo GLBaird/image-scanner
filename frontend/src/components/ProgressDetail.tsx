@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import React, { useContext } from 'react';
@@ -30,18 +30,6 @@ type ProgressState = {
     images: number;
     jpegs: number;
     pngs: number;
-};
-
-const initialState: ProgressState = {
-    started: false,
-    filesScanned: false,
-    stages: [],
-    errors: [],
-    info: '',
-    files: 0,
-    images: 0,
-    jpegs: 0,
-    pngs: 0,
 };
 
 const WaitingForScanToStart = () => (
@@ -144,7 +132,6 @@ export default function ProgressDetail() {
 
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const router = useRouter();
 
     const selected = searchParams.get('selected');
     const selectedJob = selected ? jobs.filter((j) => j.id === selected).pop() : null;

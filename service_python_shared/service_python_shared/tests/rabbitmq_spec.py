@@ -3,13 +3,13 @@ from aio_pika import IncomingMessage
 from datetime import datetime, timezone
 import pytest
 
-from modules.rabbitmq import (
+from service_python_shared.modules.rabbitmq import (
     RabbitMqConnection,
     RabbitMqMessageSender,
     RabbitMqMessageReceiver,
     RabbitMqMessage,
 )
-from configs.config import config
+from service_python_shared.configs.config import config
 
 
 QUEUE_1 = "tester"

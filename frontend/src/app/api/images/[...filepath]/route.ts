@@ -2,13 +2,18 @@ import { NextRequest } from 'next/server';
 import JobManagerClient from '@/grpc/JobManagerClient';
 import path from 'path';
 import checkForAuthAndErrors from '@/lib/check-for-auth-errors';
-import { getCorrId } from '@/lib/corr-id';
-import { nanoid } from 'nanoid';
 import logger from '@/lib/logger';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ filepath: string[] }> }) {
-    const logId = `api/images/`;
-    const corrId = (await getCorrId()) || nanoid();
+    const logId = 'api/images/';
+    const { corrId, errors } = await checkForAuthAndErrors(logId);
+
+    if (errors && errors.length > 0) {
+        return new Response(JSON.stringify({ error: 'unauthorised' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    }
 
     const filepath = '/' + (await params).filepath.join('/');
     const mimetype = path.extname(filepath) === '.png' ? 'image/png' : 'image/jpg';

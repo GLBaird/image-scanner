@@ -17,7 +17,7 @@ export default function FaceBoxes({ sizedImage, image }: FaceBoxesProps) {
             canvasRef.current,
             image.faces.map((f) => translator(f)),
         );
-    }, [canvasRef.current, sizedImage, image]);
+    }, [canvasRef, sizedImage, image]);
     return (
         <canvas
             ref={canvasRef}

@@ -1,0 +1,10 @@
+[project]
+name = "service_python_shared"
+version = "0.1.0"
+description = "Shared utilities for services"
+authors = [{ name="Leon Baird", email="info@sample.com" }]
+dependencies = []
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import {} from 'lucide-react';
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CreateNewJobInfo, createNewJobSchema } from '@/schemas/CreateNewJob';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -31,7 +31,6 @@ export default function CreateNewJobForm() {
     const [errors, setErrors] = useState<string[]>([]);
     const { sources } = useContext(JobsDashboardContext);
     const pathname = usePathname();
-    const searchParams = useSearchParams();
     const router = useRouter();
 
     const form = useForm<CreateNewJobInfo>({

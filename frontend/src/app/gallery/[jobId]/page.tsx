@@ -1,11 +1,7 @@
 import { getImages } from '@/app/actions/images';
-import CacheTags from '@/lib/cache-tags';
 import ImageGallery from '@/components/ImageGallery';
 import ImagesContextProvider from '@/app/contexts/images';
 import GallerySidePanel from '@/components/GallerySidePanel';
-
-export const revalidate = 300;
-export const fetchCacheTags = [CacheTags.images];
 
 export default async function Gallery({ params }: { params: Promise<{ jobId: string }> }) {
     const { jobId } = await params;

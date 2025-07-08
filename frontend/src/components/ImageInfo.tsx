@@ -74,7 +74,7 @@ export default function ImageInfo({ image }: { image: ImageData }) {
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-semibold">Tags: </TableCell>
-                            <TableCell>{image.tags ?? 'No tags available...'}</TableCell>
+                            <TableCell>{image.tags || 'No tags available...'}</TableCell>
                         </TableRow>
                     </TableBody>
                 </Table>

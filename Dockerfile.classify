@@ -1,0 +1,11 @@
+FROM classify-base:0.1.0
+
+RUN pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+WORKDIR /app
+
+RUN python download_models.py
+
+WORKDIR /app/src
+
+CMD [ "python", "-m", "service"]

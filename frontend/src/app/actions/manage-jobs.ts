@@ -1,8 +1,5 @@
 'use server';
 
-import { revalidateTag } from 'next/cache';
-import { cache } from 'react';
-import CacheTags from '@/lib/cache-tags';
 import logger from '@/lib/logger';
 import JobManagerClient from '@/grpc/JobManagerClient';
 import { GetJobsResponse } from '@/generated/jobmanager/GetJobsResponse';
@@ -80,13 +77,13 @@ async function loadJobsFromDB(name: string, inProgress: boolean = false): Promis
     }
 }
 
-export const getJobs = cache(async (): Promise<{ jobs: Job[]; errors?: string[] }> => {
+export const getJobs = async (): Promise<{ jobs: Job[]; errors?: string[] }> => {
     return await loadJobsFromDB('getJobs');
-});
+};
 
-export const getJobsInProgress = cache(async (): Promise<{ jobs: Job[]; errors?: string[] }> => {
+export const getJobsInProgress = async (): Promise<{ jobs: Job[]; errors?: string[] }> => {
     return await loadJobsFromDB('getJobsInProgress', true);
-});
+};
 
 export async function createNewJob(
     data: unknown,
@@ -128,23 +125,19 @@ export async function createNewJob(
         });
 
         let errors: string[] | { field: string; message: string } = [];
-        let id: string | undefined = 'new';
+        const id = response.id;
 
         if (response.errors?.values) {
             logger.error(logId, corrId, `errors creating new job from gRPC: ${response.errors.values?.join(', ')}}`);
             errors = response.errors.values.map((e) => `${e.code ?? 0} - ${e.message ?? 'unknown error'}`);
         }
 
-        if (!response.id) {
+        if (!id) {
             logger.error(logId, corrId, 'failed to create new job, no id returned from service');
             errors.push('Could not create job');
         } else {
-            // id = response.id;
             logger.info(logId, corrId, 'created new job with id:', id);
         }
-
-        revalidateTag(CacheTags.jobs);
-        revalidateTag(CacheTags.progress);
 
         return { id, errors };
     } catch (error) {
@@ -179,8 +172,6 @@ export async function deleteJob(id: string): Promise<{ errors?: string[] }> {
             logger.error(logId, corrId, `errors deleting job via gRPC: ${response.errors.values?.join(', ')}}`);
             errors = response.errors.values.map((e) => e.message ?? `${e}`);
         }
-
-        revalidateTag(CacheTags.jobs);
 
         return { errors };
     } catch (error) {
@@ -221,9 +212,6 @@ export async function startJobScan(id: string): Promise<{ state?: 'in-progress' 
             state = response.state;
             logger.debug(logId, corrId, `scanning state ${state} for job: ${id}`);
         }
-
-        revalidateTag(CacheTags.jobs);
-        revalidateTag(CacheTags.progress);
 
         return { errors };
     } catch (error) {

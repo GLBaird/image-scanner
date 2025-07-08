@@ -1,6 +1,102 @@
 version: '3.9'
 
 services:
+    frontend:
+        image: frontend:0.1.0
+        container_name: frontend
+        build:
+            context: .
+            dockerfile: Dockerfile.frontend
+        ports:
+            - '3000:3000'
+        environment:
+            - name=value
+        networks:
+            - scanner
+        depends_on:
+            - service_jobs
+
+    service_jobs:
+        image: service-jobs:0.1.0
+        container_name: service-jobs_manager
+        build:
+            context: .
+            dockerfile: Dockerfile.node-service
+            args:
+                SERVICE_DIR: service-jobs
+        ports:
+            - '5042:5042' # gRPC
+            - '4042:4042' # SSE
+        environment:
+            - RABBITMQ_HOST=rabbitmq
+            - RABBIT_MQ_JOB_MANAGER_QUEUE_NAME=JobManager
+            - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/scanner-jobs?schema=public
+        networks:
+            - scanner
+        depends_on:
+            - rabbitmq
+            - postgres
+
+    service_exif:
+        image: service-exif:0.1.0
+        container_name: service-exif_extractor
+        build:
+            context: .
+            dockerfile: Dockerfile.node-service
+            args:
+                SERVICE_DIR: service-exif
+        environment:
+            - RABBITMQ_HOST=rabbitmq
+            - RABBIT_MQ_JOB_MANAGER_QUEUE_NAME=ExifExtractor
+            - GRPC_JOB_MANAGER_HOST=service_jobs
+        networks:
+            - scanner
+        depends_on:
+            - rabbitmq
+            - service_jobs
+
+    service_faces:
+        image: service-faces:0.1.0
+        container_name: service-detect_faces
+        build:
+            context: .
+            dockerfile: Dockerfile.python-service
+            args:
+                SERVICE_DIR: service-faces
+        environment:
+            - RABBITMQ_HOST=rabbitmq
+            - RABBIT_MQ_JOB_MANAGER_QUEUE_NAME=Faces
+            - GRPC_JOB_MANAGER_HOST=service_jobs
+        networks:
+            - scanner
+        depends_on:
+            - rabbitmq
+            - service_jobs
+
+    classify_base: # BUILD STAGE ONLY!!
+        image: classify-base:0.1.0
+        build:
+            context: .
+            dockerfile: Dockerfile.python-service
+            args:
+                SERVICE_DIR: service-classify
+
+    service_classify:
+        image: service-classify:0.1.0
+        container_name: service-classify_image
+        build:
+            context: .
+            dockerfile: Dockerfile.classify
+        environment:
+            - RABBITMQ_HOST=rabbitmq
+            - RABBIT_MQ_JOB_MANAGER_QUEUE_NAME=Classify
+            - GRPC_JOB_MANAGER_HOST=service_jobs
+        networks:
+            - scanner
+        depends_on:
+            - rabbitmq
+            - service_jobs
+
     postgres:
         image: postgres:16-alpine
         container_name: postgres
@@ -22,22 +118,6 @@ services:
         networks:
             - scanner
 
-    pgadmin:
-        image: dpage/pgadmin4:8
-        container_name: pgadmin
-        restart: unless-stopped
-        environment:
-            PGADMIN_DEFAULT_EMAIL: admin@example.com
-            PGADMIN_DEFAULT_PASSWORD: admin
-        volumes:
-            - ./pgadmin:/var/lib/pgadmin
-        ports:
-            - '5050:80'
-        depends_on:
-            - postgres
-        networks:
-            - scanner
-
     rabbitmq:
         image: rabbitmq:3.12-management
         container_name: rabbitmq
@@ -45,7 +125,7 @@ services:
             - '5672:5672' # AMQP protocol
             - '15672:15672' # Management UI
         environment:
-            RABBITMQ_DEFAULT_USER: admin
+            RABBITMQ_DEFAULT_USER: admin # for dev only!
             RABBITMQ_DEFAULT_PASS: secret
         healthcheck:
             test: ['CMD', 'rabbitmq-diagnostics', 'ping']

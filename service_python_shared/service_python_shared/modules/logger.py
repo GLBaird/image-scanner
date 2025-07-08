@@ -1,6 +1,6 @@
 import sys
 from loguru import logger
-from configs.config import config
+from service_python_shared.configs.config import config
 
 
 def setup_logging():

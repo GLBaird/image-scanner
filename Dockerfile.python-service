@@ -1,0 +1,30 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y \
+    cmake \
+    build-essential \
+    python3-dev \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY ./service_python_shared /service_python_shared
+# Copy JobManager gRPC proto files to ensure up-to-date
+COPY ./service-jobs/protos/service-jobs.proto /service_python_shared/service_python_shared/protos/service-jobs.proto
+
+ARG SERVICE_DIR
+COPY ./${SERVICE_DIR} /app
+
+WORKDIR /service_python_shared
+
+RUN pip install --no-cache-dir -r requirements.txt
+RUN bash generate_proto.sh
+RUN pip install --no-cache-dir .
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+WORKDIR /app/src
+
+CMD ["python", "-m", "service"]

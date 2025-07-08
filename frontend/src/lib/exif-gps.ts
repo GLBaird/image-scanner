@@ -11,8 +11,17 @@ function convertDMSToDD(dms: number[], ref: string): number | null {
     return dd;
 }
 
-export function getLatLonFromExif(exif: any): { lat: number; lon: number } | null {
-    const { GPSLatitude, GPSLatitudeRef, GPSLongitude, GPSLongitudeRef, latitude, longitude } = exif;
+type ExifGeoData = {
+    GPSLatitude?: number[];
+    GPSLatitudeRef?: string;
+    GPSLongitude?: number[];
+    GPSLongitudeRef?: string;
+    latitude?: number;
+    longitude?: number;
+};
+
+export function getLatLonFromExif(exif: unknown): { lat: number; lon: number } | null {
+    const { GPSLatitude, GPSLatitudeRef, GPSLongitude, GPSLongitudeRef, latitude, longitude } = exif as ExifGeoData;
 
     if (latitude && longitude) return { lat: latitude, lon: longitude };
 

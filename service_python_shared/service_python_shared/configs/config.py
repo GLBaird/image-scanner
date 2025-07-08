@@ -1,6 +1,6 @@
 import os
 from typing import TypedDict
-from lib.utils import parse_int
+from service_python_shared.lib.utils import parse_int
 
 
 class RabbitMqConnectionSettings(TypedDict):
@@ -52,7 +52,7 @@ config: Config = {
         },
         # This env variable must be set to define the name of this service on the queue
         # This resource is shared with multiple services, so the queuename for the service must be set
-        "service_queue_name": os.environ.get("RABBIT_MQ_SERVICE_QUEUE_NAME", "Faces"),
+        "service_queue_name": os.environ.get("RABBIT_MQ_SERVICE_QUEUE_NAME", "unknown"),
         "job_manager_queue_name": os.environ.get(
             "RABBIT_MQ_JOB_MANAGER_QUEUE_NAME", "JobManager"
         ),

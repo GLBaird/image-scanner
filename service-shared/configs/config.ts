@@ -12,7 +12,7 @@ const config = {
         // This env variable must be set to define the name of this service on the queue
         // This resource is shared with multiple services, so the queuename for the service must be set
         serviceQueueName: process.env.RABBIT_MQ_SERVICE_QUEUE_NAME,
-        prefectLimit: Number.parseInt(process.env.RABBIT_MQ_PREFECT_LIMIT ?? '1000', 10) ?? 1000,
+        prefectLimit: Number.parseInt(process.env.RABBIT_MQ_PREFECT_LIMIT ?? '100', 10) ?? 100,
     },
     logger: {
         combinedLog: path.resolve(__dirname, '../logs/combined.log'),

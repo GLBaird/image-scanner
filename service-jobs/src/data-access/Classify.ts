@@ -80,7 +80,8 @@ export function addClassifyDataFromProcessing(
     receiver: RabbitMqMessageReceiver,
 ) {
     const logId = getLoggerMetaFactory('addClassifyDataFromProcessing')(corrId);
-    store.push({ md5, ...data });
+    store.push({ md5, tags: data });
+    logger.debug(`data received from classifier: ${data}`, logId);
     messages.push(message);
     if (ref) return;
     ref = setInterval(async () => {

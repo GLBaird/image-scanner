@@ -1,11 +1,9 @@
 'use server';
 
-import { revalidateTag } from 'next/cache';
 import { auth } from '@/auth';
 import { deleteUser } from '@/data-access/user';
 import { getCorrId } from '@/lib/corr-id';
 import logger from '@/lib/logger';
-import CacheTags from '@/lib/cache-tags';
 
 export async function deleteUserData(id: string): Promise<{ errors?: string[] }> {
     const session = await auth();
@@ -30,7 +28,6 @@ export async function deleteUserData(id: string): Promise<{ errors?: string[] }>
     try {
         await deleteUser(id, corrId);
         logger.debug(logId, corrId, 'user has been successfully deleted');
-        revalidateTag(CacheTags.users);
     } catch (error) {
         logger.error(logId, corrId, 'error deleting user with id:', id, (error as Error)?.message ?? error);
         return { errors: ['Server error deleting user.'] };

@@ -58,7 +58,7 @@ export const getImages = cache(
         cursor: string = '',
         items: number = BATCH_SIZE,
     ): Promise<{ errors: string[]; images?: ImageData[] }> => {
-        const logId = `actions/images/getImages`;
+        const logId = 'actions/images/getImages';
         const { errors, corrId } = await checkForAuthAndErrors(logId);
 
         logger.info(logId, corrId, 'loading images:', cursor, items);

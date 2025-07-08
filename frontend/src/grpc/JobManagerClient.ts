@@ -12,7 +12,7 @@ import getAuthToken from '@/lib/get-token';
 const protoloader: typeof import('@grpc/proto-loader') = (() => {
     // Turbopack can’t see inside this IIFE, so it won’t error
     // but at runtime Node will correctly `require` the module.
-    // @ts-ignore
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('@grpc/proto-loader');
 })();
 
@@ -59,7 +59,7 @@ class JobManagerClient {
     private constructor() {}
 
     public static async getRequestHeaders(overrideCorrId?: string): Promise<grpc.Metadata> {
-        const corrId = overrideCorrId ?? await getCorrId();
+        const corrId = overrideCorrId ?? (await getCorrId());
         const token = await getAuthToken();
         const metaData = new grpc.Metadata();
         metaData.set('x-correlation-id', corrId);

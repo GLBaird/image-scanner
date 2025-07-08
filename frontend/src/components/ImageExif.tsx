@@ -1,9 +1,7 @@
 'use client';
 
 import { ImageData } from '@/app/actions/images';
-import LocalDate from './ui/locale-date';
 import { Table, TableBody, TableCell, TableRow } from './ui/table';
-import { boolean } from 'zod';
 
 function formatValue(value: unknown): React.ReactNode | string | number {
     if (typeof value === 'boolean') return value ? 'ON' : 'OFF';

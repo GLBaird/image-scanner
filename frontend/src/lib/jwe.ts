@@ -24,7 +24,7 @@ export async function encryptWithA256CBC_HS512(payload: object, secretB64: strin
 export async function decryptWithA256CBC_HS512(
     token: string,
     secretB64: string,
-): Promise<{ header: Record<string, unknown>; payload: any }> {
+): Promise<{ header: Record<string, unknown>; payload: unknown }> {
     const cek = Buffer.from(secretB64, 'base64');
     if (cek.length !== 64) {
         throw new TypeError(`Invalid key length: expected 512 bits (64 bytes), got ${cek.length * 8} bits`);

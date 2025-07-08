@@ -30,7 +30,7 @@ export function useInView<T extends HTMLElement>(options?: UseInViewOptions): [R
         return () => {
             observer.disconnect();
         };
-    }, [ref.current, options?.root, options?.rootMargin, options?.threshold]);
+    }, [ref, options?.root, options?.rootMargin, options?.threshold]);
 
     return [ref, inView];
 }

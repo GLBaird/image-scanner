@@ -52,7 +52,7 @@ export default function ImageGallery() {
     const imagesLayout = useMemo(() => {
         if (size.width === 0) return images;
         return calculateRowLayout(images, numberOfImagesPerRow, size.width - scrollGap, 10);
-    }, [images, numberOfImagesPerRow, size.width]);
+    }, [images, numberOfImagesPerRow, size.width, scrollGap]);
 
     const [sentinelRef, isVisible] = useInView<HTMLDivElement>({
         rootMargin: '500px', // start loading a bit before it enters view
@@ -85,7 +85,7 @@ export default function ImageGallery() {
             if (error) return setState((prev) => ({ ...prev, error, endReached: true, loading: false }));
             setState((prev) => ({ ...prev, loading: false }));
         });
-    }, [isVisible, loading, endReached]);
+    }, [isVisible, loading, endReached, loadNextBatch]);
 
     // handle image being selected to show info
     const handleSelect = (id: string) => {

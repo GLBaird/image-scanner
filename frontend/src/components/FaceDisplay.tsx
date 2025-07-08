@@ -18,17 +18,22 @@ export default function FaceDisplay({ source, face }: FaceDisplayProps) {
     const imageRef = useRef<HTMLImageElement | undefined>(undefined);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+    const createImage = (src: string, onLoad: () => void) => {
+        const img = new Image();
+        img.src = src;
+        img.onload = onLoad;
+        return img;
+    };
+
     useEffect(() => {
-        imageRef.current = new Image();
-        imageRef.current.src = `/api/images${source}`;
-        imageRef.current.onload = () => setLoaded(true);
-    }, []);
+        imageRef.current = createImage(`/api/images${source}`, () => setLoaded(true));
+    }, [source]);
 
     useEffect(() => {
         if (loaded && canvasRef.current && imageRef.current) {
             drawFace(imageRef.current, face, canvasRef.current);
         }
-    }, [face, loaded, canvasRef.current, imageRef.current]);
+    }, [face, loaded, canvasRef, imageRef]);
 
     if (!loaded) {
         return (

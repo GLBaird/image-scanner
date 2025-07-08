@@ -1,7 +1,7 @@
 'use client';
 
 import { ImagesContext } from '@/app/contexts/images';
-import { CircleChevronLeftIcon, Image } from 'lucide-react';
+import { CircleChevronLeftIcon, Image as ImageIcon } from 'lucide-react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useContext } from 'react';
 import ImageInfo from './ImageInfo';
@@ -28,7 +28,7 @@ export default function GallerySidePanel() {
                         w-80 xl:w-100"
             >
                 <div className="flex flex-col text-center justify-center items-center grow p-10 h-full">
-                    <Image className="size-20 text-gray-500 stroke-1" />
+                    <ImageIcon className="size-20 text-gray-500 stroke-1" />
                     Select an image from the gallery to view information...
                 </div>
             </div>

@@ -5,29 +5,32 @@ from aio_pika.exceptions import (
     MessageProcessError,
 )
 import grpc
-from typing import List
-from modules.rabbitmq import (
+from typing import TypeVar, Callable
+from cv2 import error as Cv2Error
+from pydantic import ValidationError
+from service_python_shared.modules.rabbitmq import (
     RabbitMqMessageSender,
     RabbitMqMessageReceiver,
     RabbitMqMessage,
 )
-from cv2 import error as Cv2Error
-from pydantic import ValidationError
-from modules.JobManagerClient import JobManagerClient
-from modules.detect_faces import detect_faces, FaceData
-from modules.logger import get_logger
-from configs.config import config
-from lib.utils import decode_header
+from service_python_shared.modules.JobManagerClient import JobManagerClient
+from service_python_shared.modules.logger import get_logger
+from service_python_shared.configs.config import config
+from service_python_shared.lib.utils import decode_header
 
 JOB_MANAGER_QUEUE = config["rabbitmq"]["job_manager_queue_name"]
 SERVICE_QUEUE = config["rabbitmq"]["service_queue_name"]
 
+T = TypeVar("T")
+
 
 class Workflow:
-    def __init__(self):
+    def __init__(self, description: str, extract_data: Callable[[bytes], T]):
         self.sender = RabbitMqMessageSender(JOB_MANAGER_QUEUE)
         self.receiver = RabbitMqMessageReceiver(SERVICE_QUEUE)
         self.jobManagerClient = JobManagerClient()
+        self.description = description
+        self.extract_data = extract_data
 
     async def start_receiving_messages(self):
         logger = get_logger("Workflow/start_receiving_messages")
@@ -73,10 +76,10 @@ class Workflow:
             )
             return
         try:
-            faces = await self.process_image(filepath, corr_id, jwe_token)
+            extracted_data = await self.process_image(filepath, corr_id, jwe_token)
             await self.sender.send_json_message(
                 queue_name=JOB_MANAGER_QUEUE,
-                message=faces,
+                message=extracted_data,
                 filepath=filepath,
                 md5=md5,
                 job_id=job_id,
@@ -94,11 +97,11 @@ class Workflow:
         except Cv2Error as e:
             reason = f"OpenCV failed to decode image: {e}"
         except RuntimeError as e:
-            reason = f"Face detection failed: {e}"
+            reason = f"{self.description} failed: {e}"
         except ValidationError as e:
-            reason = f"FaceData validation failed: {e}"
+            reason = f"{self.description} validation failed: {e}"
         except Exception as e:
-            reason = f"Unexpected error in face detection: {e}"
+            reason = f"Unexpected error in {self.description}: {e}"
         logger.error(reason)
         await self.reject_message(
             reason, data=data, message=message, corr_id=corr_id, jwe_token=jwe_token
@@ -136,15 +139,13 @@ class Workflow:
         except Exception as e:
             logger.error(f"Unexpected error during ack: {e}")
 
-    async def process_image(
-        self, filepath: str, corr_id: str, jwe_token: str
-    ) -> List[FaceData]:
+    async def process_image(self, filepath: str, corr_id: str, jwe_token: str) -> T:
         logger = get_logger("Workflow/process_image", corr_id=corr_id)
         logger.debug(f"streaming image data for {filepath}...")
         image_data = await self.jobManagerClient.get_image_data(
             filepath, corr_id=corr_id, jwe_token=jwe_token
         )
-        logger.debug(f"detecting faces for {filepath}")
-        faces = detect_faces(image_data)
-        logger.info(f"detected {len(faces)} faces in image {filepath}")
-        return faces
+        logger.debug(f"{self.description} for {filepath}")
+        extracted_data = self.extract_data(image_data)
+        logger.debug(f"{self.description} completed for {filepath}")
+        return extracted_data

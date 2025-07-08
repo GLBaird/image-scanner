@@ -11,3 +11,9 @@
 # copy service-jobs proto
 echo "copying: service-jobs proto >>> frontend/src/grpc/protos/"
 cp service-jobs/protos/service-jobs.proto frontend/src/grpc/protos
+
+echo "copying: service-jobs proto >>> service-python-shared/protos/"
+cp service-jobs/protos/service-jobs.proto service-python-shared/protos
+
+echo "copying: service-jobs proto >>> service-exif/protos/"
+cp service-jobs/protos/service-jobs.proto service-exif/protos

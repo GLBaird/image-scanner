@@ -1,12 +1,8 @@
 import JobList from '@/components/JobList';
 import { getJobs, getScanSources } from '@/app/actions/manage-jobs';
-import CacheTags from '@/lib/cache-tags';
 import ErrorsList from '@/components/ErrorsList';
 import { JobsDetailChooser } from '@/components/JobsDetailChooser';
 import JobsDashboardContextProvider from '@/app/contexts/JobsDashboard';
-
-export const revalidate = 300;
-export const fetchCacheTags = [CacheTags.jobs];
 
 export default async function DashboardJobs() {
     const { jobs, errors: jobErrors } = await getJobs();

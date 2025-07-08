@@ -14,12 +14,10 @@ const baseConfig: NextAuthConfig = {
         strategy: 'jwt',
     },
     callbacks: {
-        async jwt({ token, account }) {
-            // console.log('token:', token);
+        async jwt({ token }) {
             return token;
         },
-        async session({ session, token }) {
-            // console.log('session:', session);
+        async session({ session }) {
             return session;
         },
     },

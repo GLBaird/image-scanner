@@ -5,9 +5,11 @@ from typing import Optional, List
 import grpc
 from grpc import aio
 
-from configs.config import config
-from generated.service_jobs_pb2 import GetDataRequest
-from generated.service_jobs_pb2_grpc import JobManagerControllerStub
+from service_python_shared.configs.config import config
+from service_python_shared.generated.service_jobs_pb2 import GetDataRequest
+from service_python_shared.generated.service_jobs_pb2_grpc import (
+    JobManagerControllerStub,
+)
 
 logger = logging.getLogger("JobManagerClient")
 

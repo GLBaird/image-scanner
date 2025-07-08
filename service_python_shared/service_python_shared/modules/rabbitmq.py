@@ -11,8 +11,8 @@ from aio_pika.abc import (
 )
 from pydantic import BaseModel, ConfigDict, Field
 
-from configs.config import config
-from modules.logger import get_logger
+from service_python_shared.configs.config import config
+from service_python_shared.modules.logger import get_logger
 
 T = TypeVar("T")
 

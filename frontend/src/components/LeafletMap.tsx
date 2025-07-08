@@ -4,8 +4,6 @@ import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-export type GeoPositionDataExif = {};
-
 const DefaultIcon = L.icon({
     iconUrl: '/marker-icon.png',
     shadowUrl: '/marker-shadow.png',
@@ -35,12 +33,16 @@ const ZoomButtons: FC = () => {
     );
 };
 
-const RecenterMap = ({ center }: { center: [number, number] }) => {
-    const map = useMap();
+interface RecenterMapProps {
+    center: [number, number];
+}
 
+const RecenterMap = ({ center }: RecenterMapProps) => {
+    const map = useMap();
+    const [lat, lng] = center;
     useEffect(() => {
-        map.setView(center);
-    }, [center.join(',')]); // Avoid unnecessary updates
+        map.setView([lat, lng]);
+    }, [map, lat, lng]); // Avoid unnecessary updates with lat/lng
 
     return null;
 };
