@@ -53,7 +53,7 @@ class RabbitMqConnection:
                     return
                 self.connection_attempts += 1
                 logger.info(
-                    f"Connecting to RabbitMQ at {conn_info['host']}:{conn_info['port']} for queue {self.queue_name}"
+                    f"Connecting to RabbitMQ at {conn_info['host']}:{conn_info['port']} for queue {self.queue_name} attempt {self.connection_attempts}/{self.max_connection_attempts}"
                 )
                 try:
                     self.connection = await aio_pika.connect_robust(**conn_info)

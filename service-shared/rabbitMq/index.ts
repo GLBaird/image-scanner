@@ -6,6 +6,8 @@ const makeLoggerId = getLoggerMetaFactory('RabbitMQConnection');
 const connInfo = { ...config.rabbitMq.connectSettings };
 const originQueueName = config.rabbitMq.serviceQueueName;
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export type RabbitMqMessage<T> = {
     from: string;
     to: string;
@@ -23,6 +25,9 @@ export class RabbitMqConnection {
     channel?: ampq.Channel;
     queueName: string;
     durable: boolean;
+    connectionAttempts = 0;
+    MAX_CONNECTION_ATTEMPTS = 10;
+    TIME_BETWEEN_CONNECTION_ATTEMPTS = 2000; // 2s
 
     constructor(queueName: string, durable: boolean = true) {
         this.queueName = queueName;
@@ -38,14 +43,34 @@ export class RabbitMqConnection {
             logId,
         );
         this.connectingPromise = (async () => {
-            const conn = await ampq.connect(connInfo);
-            const ch = await conn.createChannel();
-            await ch.prefetch(config.rabbitMq.prefectLimit);
-            await ch.assertQueue(this.queueName, { durable: this.durable });
+            while (this.connectionAttempts < this.MAX_CONNECTION_ATTEMPTS) {
+                this.connectionAttempts += 1;
+                logger.info(`RabbitMQ connection attempt: ${this.connectionAttempts}/${this.MAX_CONNECTION_ATTEMPTS}`);
+                try {
+                    const conn = await ampq.connect(connInfo);
+                    const ch = await conn.createChannel();
+                    await ch.prefetch(config.rabbitMq.prefectLimit);
+                    await ch.assertQueue(this.queueName, { durable: this.durable });
 
-            this.connection = conn;
-            this.channel = ch;
-            logger.info('RabbitMQ Connection Established', logId);
+                    this.connection = conn;
+                    this.channel = ch;
+                    logger.info('RabbitMQ connection established', logId);
+                    this.connectionAttempts = 0;
+                    return;
+                } catch (error) {
+                    logger.error(`failed to connect to RabbitMQ: ${error.message}`);
+                    if (this.connectionAttempts >= this.MAX_CONNECTION_ATTEMPTS) {
+                        logger.error('exceeded max connection attempts with RabbitMQ - aborting service.');
+                        process.exit(1);
+                    }
+                    logger.info(
+                        `waiting ${
+                            this.TIME_BETWEEN_CONNECTION_ATTEMPTS / 1000
+                        } seconds before attempting to connect again to RabbitMQ`,
+                    );
+                    await sleep(this.TIME_BETWEEN_CONNECTION_ATTEMPTS);
+                }
+            }
         })();
         await this.connectingPromise;
         this.connectingPromise = undefined;

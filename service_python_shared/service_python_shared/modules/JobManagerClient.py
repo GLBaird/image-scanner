@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from typing import Optional, List
 
 import grpc
@@ -10,16 +9,20 @@ from service_python_shared.generated.service_jobs_pb2 import GetDataRequest
 from service_python_shared.generated.service_jobs_pb2_grpc import (
     JobManagerControllerStub,
 )
+from service_python_shared.modules.logger import get_logger
 
-logger = logging.getLogger("JobManagerClient")
+MAX_CONNECTION_ATTEMPTS = 10
+TIME_BETWEEN_ATTEMPTS = 2  # seconds
 
 
 class JobManagerClient:
     _client: Optional[JobManagerControllerStub] = None
     _channel: Optional[aio.Channel] = None
+    _connection_attempts = 0
 
     @classmethod
     async def connect(cls):
+        logger = get_logger("JobManagerClient/connect")
         domain = config["grpc"]["job_manager_host"]
         port = config["grpc"]["job_manager_port"]
         address = f"{domain}:{port}"
@@ -28,12 +31,25 @@ class JobManagerClient:
         cls._channel = aio.insecure_channel(address)
         cls._client = JobManagerControllerStub(cls._channel)
 
-        try:
-            await asyncio.wait_for(cls._channel.channel_ready(), timeout=5)
-            logger.info(f"Connected to JobManager gRPC on {address}")
-        except asyncio.TimeoutError:
-            logger.error(f"Timed out connecting to JobManager gRPC at {address}")
-            raise
+        while cls._connection_attempts < MAX_CONNECTION_ATTEMPTS:
+            cls._connection_attempts += 1
+            try:
+                logger.info(
+                    f"Connecting to gRPC attempt {cls._connection_attempts}/{MAX_CONNECTION_ATTEMPTS}"
+                )
+                await asyncio.wait_for(cls._channel.channel_ready(), timeout=5)
+                logger.info(f"Connected to JobManager gRPC on {address}")
+                cls._connection_attempts = 0
+                return
+            except asyncio.TimeoutError:
+                logger.error(f"Timed out connecting to JobManager gRPC at {address}")
+                if cls._connection_attempts >= MAX_CONNECTION_ATTEMPTS:
+                    logger.error("Max connection attempts reached, aborting service!")
+                    raise ConnectionError(
+                        "Failed to connect to JobManager gRPC service."
+                    )
+                logger.info(f"Retrying in {TIME_BETWEEN_ATTEMPTS} seconds...")
+                await asyncio.sleep(TIME_BETWEEN_ATTEMPTS)
 
     @classmethod
     async def get_image_data(
@@ -49,6 +65,8 @@ class JobManagerClient:
 
         buffer: List[bytes] = []
         log_id = f"getImageData:{corr_id}"
+
+        logger = get_logger("JobManagerClient/get_image_data")
 
         request = GetDataRequest(filepath=image_source)
         try:
@@ -66,6 +84,7 @@ class JobManagerClient:
 
     @classmethod
     async def close_grpc_socket(cls):
+        logger = get_logger("JobManagerClient/close_grpc_socket")
         if cls._channel:
             await cls._channel.close()
             logger.info(
