@@ -24,6 +24,7 @@ services:
             dockerfile: Dockerfile.node-service
             args:
                 SERVICE_DIR: service-jobs
+                GENERATE_PRISMA: true
         ports:
             - '5042:5042' # gRPC
             - '4042:4042' # SSE

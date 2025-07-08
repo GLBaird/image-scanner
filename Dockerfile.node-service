@@ -23,6 +23,12 @@ WORKDIR /app
 RUN npm -g install pnpm
 RUN pnpm install --fix-lockfile --prefer-offline
 RUN bash proto-gen.sh
-RUN npx prisma generate
+
+ARG GENERATE_PRISMA=false
+RUN if [ "$GENERATE_PRISMA" = "true" ]; then \
+    npx prisma generate; \
+    else \
+    echo "Skipping prisma generate"; \
+    fi
 
 CMD ["pnpm", "start"]

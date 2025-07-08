@@ -14,8 +14,13 @@ const grpcObj = grpc.loadPackageDefinition(packageDef) as unknown as ProtoGrpcTy
 
 const makeLogId = getLoggerMetaFactory('JobManagerClient');
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 class JobManagerClient {
     private static client: JobManagerControllerClient;
+    private static connectionAttempts = 0;
+    static MAX_CONNECTION_ATTEMPTS = 10;
+    static TIME_BETWEEN_CONNECTION_ATTEMPTS = 2000;
 
     static async connect() {
         const logId = makeLogId('connect');
@@ -29,13 +34,41 @@ class JobManagerClient {
             address,
             grpc.credentials.createInsecure(),
         );
-        await new Promise<void>((resolve, reject) => {
-            this.client.waitForReady(timeout, (err) => {
-                if (err) return reject(err);
-                logger.info(`service is connected to JobManager via grpc on: ${address}`, logId);
-                resolve();
-            });
-        });
+
+        while (this.connectionAttempts < this.MAX_CONNECTION_ATTEMPTS) {
+            this.connectionAttempts += 1;
+
+            logger.info(
+                `gRPC connection attempt ${this.connectionAttempts}/${this.MAX_CONNECTION_ATTEMPTS}`,
+            );
+
+            const timeout = new Date();
+            timeout.setSeconds(timeout.getSeconds() + 5);
+
+            try {
+                await new Promise<void>((resolve, reject) => {
+                    this.client.waitForReady(timeout, (err) => {
+                        if (err) return reject(err);
+                        resolve();
+                    });
+                });
+
+                logger.info(`Connected to JobManager gRPC on ${address}`, logId);
+                this.connectionAttempts = 0;
+                return;
+            } catch (err) {
+                logger.warn(`gRPC connection failed: ${err.message}`);
+                if (this.connectionAttempts >= this.MAX_CONNECTION_ATTEMPTS) {
+                    logger.error('Max connection attempts reached — aborting service.');
+                    process.exit(1);
+                }
+
+                logger.info(
+                    `Retrying in ${this.TIME_BETWEEN_CONNECTION_ATTEMPTS / 1000} seconds...`,
+                );
+                await sleep(this.TIME_BETWEEN_CONNECTION_ATTEMPTS);
+            }
+        }
     }
 
     static getImageData(
