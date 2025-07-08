@@ -2,6 +2,7 @@ import { NextAuthConfig } from 'next-auth';
 import Routes from '@/lib/routes';
 import { encryptWithA256CBC_HS512, decryptWithA256CBC_HS512 } from './lib/jwe';
 import { EnvVariables, getEnv } from './envs';
+import { JWT } from 'next-auth/jwt';
 
 const baseConfig: NextAuthConfig = {
     providers: [],
@@ -29,7 +30,7 @@ const baseConfig: NextAuthConfig = {
         decode: async ({ token }) => {
             if (!token) return null;
             const { payload } = await decryptWithA256CBC_HS512(token, getEnv(EnvVariables.jweSecret));
-            return payload;
+            return payload as JWT;
         },
     },
     // JWE_SECRET must be a 64-byte Base64 string

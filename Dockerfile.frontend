@@ -9,7 +9,7 @@ WORKDIR /app
 
 RUN pnpm install --fix-lockfile --prefer-offline
 RUN bash proto-gen.sh
-
+RUN npx prisma generate
 RUN pnpm run build
 
 CMD ["pnpm", start]

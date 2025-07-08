@@ -6,7 +6,7 @@
         "proto:gen": "bash proto-gen.sh",
         "dev": "next dev --turbopack",
         "build": "next build",
-        "start": "next start",
+        "start": "node .next/standalone/server.js",
         "lint": "next lint",
         "auth:keygen": "node generate_auth_key.js"
     },

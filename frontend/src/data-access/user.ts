@@ -63,7 +63,7 @@ export const getUsers = cache(async (count: number, cursor?: string, corrId: str
         },
     });
 
-    return users.map((user) => ({
+    return users.map((user: (typeof users)[number]) => ({
         ...user,
         provider: user.accounts[0]?.provider ?? 'credentials',
     }));
