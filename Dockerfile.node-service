@@ -1,5 +1,11 @@
 FROM node:20.10-slim
 
+# Install OpenSSL and libssl-dev
+RUN apt-get update && apt-get install -y \
+    libssl-dev \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
+
 ARG NODE_ENV=production
 ENV NODE_ENV=$NODE_ENV
 
@@ -17,5 +23,6 @@ WORKDIR /app
 RUN npm -g install pnpm
 RUN pnpm install --fix-lockfile --prefer-offline
 RUN bash proto-gen.sh
+RUN npx prisma generate
 
 CMD ["pnpm", "start"]

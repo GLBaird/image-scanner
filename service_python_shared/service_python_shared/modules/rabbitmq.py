@@ -41,20 +41,42 @@ class RabbitMqConnection:
         self.connection: Optional[AbstractRobustConnection] = None
         self.channel: Optional[AbstractRobustChannel] = None
         self._connect_lock = asyncio.Lock()
+        self.connection_attempts = 0
+        self.max_connection_attempts = 10
+        self.wait_time_for_connection = 2  # seconds
 
     async def connect(self):
         logger = get_logger("RabbitMqConnection/connect")
-        async with self._connect_lock:
-            if self.connection and self.channel:
-                return
-            logger.info(
-                f"Connecting to RabbitMQ at {conn_info['host']}:{conn_info['port']} for queue {self.queue_name}"
-            )
-            self.connection = await aio_pika.connect_robust(**conn_info)
-            self.channel = await self.connection.channel()
-            await self.channel.set_qos(prefetch_count=prefetch_limit)
-            await self.channel.declare_queue(self.queue_name, durable=self.durable)
-            logger.info("RabbitMQ Connection Established")
+        while self.connection_attempts < self.max_connection_attempts:
+            async with self._connect_lock:
+                if self.connection and self.channel:
+                    return
+                self.connection_attempts += 1
+                logger.info(
+                    f"Connecting to RabbitMQ at {conn_info['host']}:{conn_info['port']} for queue {self.queue_name}"
+                )
+                try:
+                    self.connection = await aio_pika.connect_robust(**conn_info)
+                    self.channel = await self.connection.channel()
+                    await self.channel.set_qos(prefetch_count=prefetch_limit)
+                    await self.channel.declare_queue(
+                        self.queue_name, durable=self.durable
+                    )
+                    logger.info("RabbitMQ Connection Established")
+                    self.connection_attempts = 0
+                    return  # Exit once connected
+
+                except Exception as e:
+                    logger.warning(f"RabbitMQ connection failed: {e}")
+                    if self.connection_attempts >= self.max_connection_attempts:
+                        logger.error(
+                            "Maximum connection attempts reached - aborting service."
+                        )
+                        raise
+                    logger.info(
+                        f"⏳ Retrying in {self.wait_time_for_connection:.2f} seconds..."
+                    )
+                    await asyncio.sleep(self.wait_time_for_connection)
 
     def is_connected(self) -> bool:
         return self.connection is not None and self.channel is not None

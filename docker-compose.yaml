@@ -29,7 +29,7 @@ services:
             - '4042:4042' # SSE
         environment:
             - RABBITMQ_HOST=rabbitmq
-            - RABBIT_MQ_JOB_MANAGER_QUEUE_NAME=JobManager
+            - RABBIT_MQ_SERVICE_QUEUE_NAME=JobManager
             - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/scanner-jobs?schema=public
         networks:
             - scanner
@@ -47,7 +47,7 @@ services:
                 SERVICE_DIR: service-exif
         environment:
             - RABBITMQ_HOST=rabbitmq
-            - RABBIT_MQ_JOB_MANAGER_QUEUE_NAME=ExifExtractor
+            - RABBIT_MQ_SERVICE_QUEUE_NAME=ExifExtractor
             - GRPC_JOB_MANAGER_HOST=service_jobs
         networks:
             - scanner
@@ -65,21 +65,13 @@ services:
                 SERVICE_DIR: service-faces
         environment:
             - RABBITMQ_HOST=rabbitmq
-            - RABBIT_MQ_JOB_MANAGER_QUEUE_NAME=Faces
+            - RABBIT_MQ_SERVICE_QUEUE_NAME=Faces
             - GRPC_JOB_MANAGER_HOST=service_jobs
         networks:
             - scanner
         depends_on:
             - rabbitmq
             - service_jobs
-
-    classify_base: # BUILD STAGE ONLY!!
-        image: classify-base:0.1.0
-        build:
-            context: .
-            dockerfile: Dockerfile.python-service
-            args:
-                SERVICE_DIR: service-classify
 
     service_classify:
         image: service-classify:0.1.0
@@ -89,7 +81,7 @@ services:
             dockerfile: Dockerfile.classify
         environment:
             - RABBITMQ_HOST=rabbitmq
-            - RABBIT_MQ_JOB_MANAGER_QUEUE_NAME=Classify
+            - RABBIT_MQ_SERVICE_QUEUE_NAME=Classify
             - GRPC_JOB_MANAGER_HOST=service_jobs
         networks:
             - scanner

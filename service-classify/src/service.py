@@ -1,6 +1,6 @@
 import asyncio
-from service_python_shared.service_python_shared.modules.logger import setup_logging, get_logger
-from service_python_shared.service_python_shared.modules.Workflow import Workflow
+from service_python_shared.modules.logger import setup_logging, get_logger
+from service_python_shared.modules.Workflow import Workflow
 from modules.classify_image import classify_image
 
 
