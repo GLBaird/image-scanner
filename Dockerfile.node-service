@@ -6,6 +6,16 @@ RUN apt-get update && apt-get install -y \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
+ARG INSTALL_IMAGE_MAGICK_TOOLS=false
+RUN if [ "$INSTALL_IMAGE_MAGICK_TOOLS" = "true" ]; then \
+    apt-get update && apt-get install -y \
+    imagemagick \
+    file \
+    && rm -rf /var/lib/apt/lists/*; \
+    else \
+    echo "Skipping install imagemagick and file tools"; \
+    fi
+
 ARG NODE_ENV=production
 ENV NODE_ENV=$NODE_ENV
 

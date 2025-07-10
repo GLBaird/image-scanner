@@ -40,6 +40,7 @@ class JobManagerClient {
 
             logger.info(
                 `gRPC connection attempt ${this.connectionAttempts}/${this.MAX_CONNECTION_ATTEMPTS}`,
+                logId,
             );
 
             const timeout = new Date();
@@ -59,12 +60,13 @@ class JobManagerClient {
             } catch (err) {
                 logger.warn(`gRPC connection failed: ${err.message}`);
                 if (this.connectionAttempts >= this.MAX_CONNECTION_ATTEMPTS) {
-                    logger.error('Max connection attempts reached — aborting service.');
+                    logger.error('Max connection attempts reached — aborting service.', logId);
                     process.exit(1);
                 }
 
                 logger.info(
                     `Retrying in ${this.TIME_BETWEEN_CONNECTION_ATTEMPTS / 1000} seconds...`,
+                    logId,
                 );
                 await sleep(this.TIME_BETWEEN_CONNECTION_ATTEMPTS);
             }

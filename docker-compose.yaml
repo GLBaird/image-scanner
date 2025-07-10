@@ -9,8 +9,13 @@ services:
             dockerfile: Dockerfile.frontend
         ports:
             - '3000:3000'
+            - '5555:5555' # for Prisma Studio if running
         environment:
-            - name=value
+            - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/frontend?schema=public
+            - GRPC_DOMAIN=service_jobs
+            - AUTH_SECRET=oRVQGb1cDGLdbhXrP1DT0Kqym81MYl5WfOKibjtTtxGP62h+Ot1NA+3eX8VUPIH0h4+O65dhnm79hF7k5kjQhQ==
+            - NEXTAUTH_URL=http://localhost:3000
+            - AUTH_TRUST_HOST=true
         networks:
             - scanner
         depends_on:
@@ -25,13 +30,18 @@ services:
             args:
                 SERVICE_DIR: service-jobs
                 GENERATE_PRISMA: true
+                INSTALL_IMAGE_MAGICK_TOOLS: true
         ports:
             - '5042:5042' # gRPC
             - '4042:4042' # SSE
+            - '6666:5555' # for Prisma Studio if running (on :6666)
         environment:
             - RABBITMQ_HOST=rabbitmq
             - RABBIT_MQ_SERVICE_QUEUE_NAME=JobManager
             - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/scanner-jobs?schema=public
+            - SSE_URL=https://service_jobs:4042/events
+        volumes:
+            - ./service-jobs/sources:/app/sources # use this line to mount drives or folders to scan for source images
         networks:
             - scanner
         depends_on:
@@ -82,7 +92,7 @@ services:
             dockerfile: Dockerfile.classify
         environment:
             - RABBITMQ_HOST=rabbitmq
-            - RABBIT_MQ_SERVICE_QUEUE_NAME=Classify
+            - RABBIT_MQ_SERVICE_QUEUE_NAME=Classifier
             - GRPC_JOB_MANAGER_HOST=service_jobs
         networks:
             - scanner
@@ -99,7 +109,7 @@ services:
             POSTGRES_PASSWORD: postgres
             # TZ: "UTC"  # Uncomment to set container timezone
         volumes:
-            - ./db:/var/lib/postgresql/data
+            - app_data:/var/lib/postgresql/data
         ports:
             - '5432:5432'
         # Health‑check so Docker Compose can wait for Postgres to be ready.
@@ -125,11 +135,15 @@ services:
             interval: 10s
             timeout: 5s
             retries: 5
-        #volumes:
-        #- rabbitmq_data:/var/lib/rabbitmq
+        volumes:
+            - rabbitmq_data:/var/lib/rabbitmq
         networks:
             - scanner
 
 networks:
     scanner:
         driver: bridge
+
+volumes:
+    app_data:
+    rabbitmq_data:

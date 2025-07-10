@@ -1,5 +1,11 @@
 FROM node:20.10-slim
 
+# Install OpenSSL and libssl-dev
+RUN apt-get update && apt-get install -y \
+    libssl-dev \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN npm install -g pnpm
 
 COPY frontend /app
@@ -11,7 +17,9 @@ RUN pnpm install --fix-lockfile --prefer-offline
 RUN bash proto-gen.sh
 RUN npx prisma generate
 RUN pnpm run build
+RUN cp -r .next/static .next/standalone/.next/static
+RUN cp -r public .next/standalone/public
 
 EXPOSE 3000
 
-CMD ["pnpm", start]
+CMD ["pnpm", "start"]

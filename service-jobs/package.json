@@ -6,7 +6,7 @@
     "scripts": {
         "proto:gen": "bash proto-gen.sh",
         "keys:gen": "openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ./certs/server.key -out ./certs/server.crt",
-        "start": "ts-node src/service",
+        "start": "npx prisma db push && ts-node src/service",
         "testdb": "ts-node src/test-db.ts",
         "dev": "SERVICE_NAME='JobManager' RABBIT_MQ_SERVICE_QUEUE_NAME='JobManager' nodemon src/service.ts",
         "build": "tsc",
