@@ -48,9 +48,17 @@ export class RabbitMqConnection {
                 logger.info(`RabbitMQ connection attempt: ${this.connectionAttempts}/${this.MAX_CONNECTION_ATTEMPTS}`);
                 try {
                     const conn = await ampq.connect(connInfo);
-                    const ch = await conn.createChannel();
-                    await ch.prefetch(config.rabbitMq.prefectLimit);
-                    await ch.assertQueue(this.queueName, { durable: this.durable });
+                    const ch = await conn.createConfirmChannel();
+                    await ch.prefetch(config.rabbitMq.prefetchLimit);
+                    // configure Dead Letter Queue
+                    await ch.assertExchange('img.dlx', 'topic', { durable: true });
+                    await ch.assertQueue(`${this.queueName}.dead`, { durable: true });
+                    await ch.bindQueue(`${this.queueName}.dead`, 'img.dlx', `${this.queueName}.#`);
+                    await ch.assertQueue(this.queueName, {
+                        durable: this.durable,
+                        deadLetterExchange: 'img.dlx',
+                        deadLetterRoutingKey: `${this.queueName}.dead`,
+                    });
 
                     this.connection = conn;
                     this.channel = ch;
@@ -58,7 +66,7 @@ export class RabbitMqConnection {
                     this.connectionAttempts = 0;
                     return;
                 } catch (error) {
-                    logger.error(`failed to connect to RabbitMQ: ${error.message}`);
+                    logger.error(`failed to connect to RabbitMQ: ${(error as Error)?.message ?? error}`);
                     if (this.connectionAttempts >= this.MAX_CONNECTION_ATTEMPTS) {
                         logger.error('exceeded max connection attempts with RabbitMQ - aborting service.');
                         process.exit(1);
