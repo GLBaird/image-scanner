@@ -116,6 +116,10 @@ export class RabbitMqConnectionManager {
         return this.connection?.isConnected() ?? false;
     }
 
+    async connect() {
+        if (!this.isConnected()) await this.connection.connect();
+    }
+
     async close() {
         await this.connection?.close();
     }
@@ -196,5 +200,18 @@ export class RabbitMqMessageReceiver extends RabbitMqConnectionManager {
         logger.debug(`message ${message.fields.consumerTag}/${message.fields.deliveryTag} acknowledged`, {
             id: 'RabbitMQMessageReceiver/acknowledgeMessageReceipt',
         });
+    }
+
+    async rejectFailedMessage(message: ampq.ConsumeMessage, requeue = false) {
+        if (!this.isConnected()) await this.connection.connect();
+        this.connection.channel!.nack(message, false, requeue);
+        logger.debug(
+            `message ${message.fields.consumerTag}/${message.fields.deliveryTag} rejected, requeued: ${
+                requeue ? 'YES' : 'NO'
+            }`,
+            {
+                id: 'RabbitMQMessageReceiver/rejectFailedMessage',
+            },
+        );
     }
 }

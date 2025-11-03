@@ -87,12 +87,28 @@ export function addExifDataFromProcessing(
         const messagesToAcknowledge = messages;
         messages = [];
         try {
-            await prisma.exifData.createMany({ data });
+            await prisma.exifData.createMany({ data, skipDuplicates: true });
             logger.info(`Added ${data.length} exif data records`, logId);
             // now we have stored the data, we can acknowledge messages have been processed from queue
-            messagesToAcknowledge.forEach((m) => receiver.acknowledgeMessageReceipt(m));
+            if (!receiver.isConnected()) await receiver.connect();
+            const promises = messagesToAcknowledge.map((m) =>
+                receiver.acknowledgeMessageReceipt(m),
+            );
+            await Promise.all(promises);
         } catch (error) {
             logger.error(`failed to cache exif data: ${error}`, logId);
+
+            const isTransient =
+                error?.code === 'P1001' /* Prisma: DB unreachable */ ||
+                error?.code === 'ETIMEDOUT' ||
+                error?.message?.includes('timeout');
+
+            // requeue message as storage failed --- not the message if isTransiant
+            if (!receiver.isConnected()) await receiver.connect();
+            const promises = messagesToAcknowledge.map((m) =>
+                receiver.rejectFailedMessage(m, isTransient),
+            );
+            await Promise.all(promises);
         }
     }, 1000);
 }

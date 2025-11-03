@@ -321,7 +321,7 @@ class ProgressStore {
      * @param error
      * @returns
      */
-public registerStageError(jobId: string, stage: string, error: string) {
+    public registerStageError(jobId: string, stage: string, error: string) {
         let stageProgress = this.stageProgress.get(this.makeStageRef(jobId, stage));
         if (!stageProgress) return;
         stageProgress.errors.push(error);
