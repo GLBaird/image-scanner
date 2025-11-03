@@ -59,10 +59,41 @@ class RabbitMqConnection:
                     self.connection = await aio_pika.connect_robust(**conn_info)
                     self.channel = await self.connection.channel()
                     await self.channel.set_qos(prefetch_count=prefetch_limit)
-                    await self.channel.declare_queue(
-                        self.queue_name, durable=self.durable
+
+                    # --- DLQ / DLX setup ---
+
+                    dlx_name = "img.dlx"
+                    dlq_name = f"{self.queue_name}.dead"
+
+                    # Declare shared dead-letter exchange
+                    await self.channel.declare_exchange(
+                        dlx_name,
+                        aio_pika.ExchangeType.TOPIC,
+                        durable=True,
                     )
-                    logger.info("RabbitMQ Connection Established")
+
+                    # Declare per-service DLQ
+                    await self.channel.declare_queue(dlq_name, durable=True)
+
+                    # Bind DLQ to DLX
+                    await self.channel.bind_queue(
+                        dlq_name, dlx_name, routing_key=f"{self.queue_name}.#"
+                    )
+
+                    # Declare main service queue and attach DLX config
+                    args = {
+                        "x-dead-letter-exchange": dlx_name,
+                        "x-dead-letter-routing-key": dlq_name,
+                    }
+                    await self.channel.declare_queue(
+                        self.queue_name, durable=self.durable, arguments=args
+                    )
+
+                    # --- end DLQ / DLX setup ---
+
+                    logger.info(
+                        f"RabbitMQ Connection Established for {self.queue_name} (with DLQ {dlq_name})"
+                    )
                     self.connection_attempts = 0
                     return  # Exit once connected
 
