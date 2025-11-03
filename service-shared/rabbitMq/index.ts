@@ -176,7 +176,8 @@ export class RabbitMqMessageReceiver extends RabbitMqConnectionManager {
                 }
             } catch (error) {
                 logger.error(`error attempting to unpak message: ${error}`, logId);
-                this.connection.channel?.ack(message);
+                // Reject to DLQ if failed
+                this.connection.channel?.nack(message, false, false);
             }
         });
     }

@@ -189,13 +189,15 @@ class RabbitMqMessageReceiver(RabbitMqConnectionManager):
 
                 await callback(parsed_message, message)
 
-                if self.auto_acknowledge:
+                if not self.auto_acknowledge:
                     await message.ack()
             except Exception as e:
                 logger.error(f"Error processing message: {e}")
-                # Always ack even on error to avoid retry loops
-                if not self.auto_acknowledge:
-                    await message.ack()
+                # Reject to DLQ if failed
+                try:
+                    await message.reject(requeue=False)
+                except Exception as nack_err:
+                    logger.error(f"failed to reject message: {nack_err}")
 
         await queue.consume(_consumer, no_ack=False)
 
