@@ -47,7 +47,7 @@ class Workflow:
 
     async def stop_processing(self):
         logger = get_logger("Workflow/stop_processing")
-        logger.warning("closing serice and killing all connections...")
+        logger.warning("closing service and killing all connections...")
         await self.receiver.close()
         await self.sender.close()
         await self.jobManagerClient.close_grpc_socket()
@@ -75,6 +75,7 @@ class Workflow:
                 jwe_token=jwe_token,
             )
             return
+        acked = False
         try:
             extracted_data = await self.process_image(filepath, corr_id, jwe_token)
             await self.sender.send_json_message(
@@ -88,6 +89,7 @@ class Workflow:
                 errors=[],
             )
             await message.ack()
+            acked = True
             logger.info(f"completed processing image {filepath} for job: {job_id}")
             return
         except grpc.RpcError as e:
@@ -108,15 +110,17 @@ class Workflow:
         except Exception as e:
             reason = f"Unexpected error in {self.description}: {e}"
             requeue = True
+
         logger.error(reason)
-        await self.reject_message(
-            reason,
-            data=data,
-            message=message,
-            corr_id=corr_id,
-            jwe_token=jwe_token,
-            requeue=requeue,
-        )
+        if not acked:
+            await self.reject_message(
+                reason,
+                data=data,
+                message=message,
+                corr_id=corr_id,
+                jwe_token=jwe_token,
+                requeue=requeue,
+            )
 
     async def reject_message(
         self,
