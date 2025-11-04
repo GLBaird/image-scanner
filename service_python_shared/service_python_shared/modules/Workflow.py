@@ -92,19 +92,30 @@ class Workflow:
             return
         except grpc.RpcError as e:
             reason = f"failed to stream image data for {filepath}: #{e.code()} - {e.details()}"
+            requeue = True
         except (ValueError, TypeError, IndexError) as e:
             reason = f"Bad image input or parsing error: {e}"
+            requeue = False
         except Cv2Error as e:
             reason = f"OpenCV failed to decode image: {e}"
+            requeue = False
         except RuntimeError as e:
             reason = f"{self.description} failed: {e}"
+            requeue = True
         except ValidationError as e:
             reason = f"{self.description} validation failed: {e}"
+            requeue = False
         except Exception as e:
             reason = f"Unexpected error in {self.description}: {e}"
+            requeue = True
         logger.error(reason)
         await self.reject_message(
-            reason, data=data, message=message, corr_id=corr_id, jwe_token=jwe_token
+            reason,
+            data=data,
+            message=message,
+            corr_id=corr_id,
+            jwe_token=jwe_token,
+            requeue=requeue,
         )
 
     async def reject_message(
@@ -114,11 +125,12 @@ class Workflow:
         message: IncomingMessage,
         corr_id: str | None,
         jwe_token: str | None,
+        requeue=False,
     ):
         logger = get_logger("Workflow/reject_message", corr_id=corr_id)
         logger.info(f"rejecting message due to: {reason} for file: {data.filepath}")
         try:
-            await message.ack()
+            await message.nack(requeue=requeue)
             await self.sender.send_json_message(
                 JOB_MANAGER_QUEUE,
                 {},

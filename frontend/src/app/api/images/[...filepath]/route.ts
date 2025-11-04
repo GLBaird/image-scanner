@@ -6,7 +6,7 @@ import logger from '@/lib/logger';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ filepath: string[] }> }) {
     const logId = 'api/images/';
-    const { corrId, errors } = await checkForAuthAndErrors(logId);
+    const { corrId, errors } = await checkForAuthAndErrors(logId, undefined, 'image-request');
 
     if (errors && errors.length > 0) {
         return new Response(JSON.stringify({ error: 'unauthorised' }), {

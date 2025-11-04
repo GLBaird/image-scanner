@@ -31,12 +31,16 @@ RUN pnpm install --fix-lockfile --prefer-offline
 
 WORKDIR /app
 RUN npm -g install pnpm
-RUN pnpm install --fix-lockfile --prefer-offline
+RUN pnpm install --shamefully-hoist --fix-lockfile --prefer-offline
 RUN bash proto-gen.sh
 
+# Generate Prisma client with explicit engine type
 ARG GENERATE_PRISMA=false
 RUN if [ "$GENERATE_PRISMA" = "true" ]; then \
-    npx prisma generate; \
+    echo "Running Prisma generate (native engine)..." && \
+    export PRISMA_CLIENT_ENGINE_TYPE=library && \
+    export PRISMA_CLI_QUERY_ENGINE_TYPE=library && \
+    npx prisma generate --schema=prisma/schema.prisma; \
     else \
     echo "Skipping prisma generate"; \
     fi

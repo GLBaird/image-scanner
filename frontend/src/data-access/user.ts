@@ -25,7 +25,8 @@ const makeLoggerId = (id: string) => `data-access/user/${id}`;
 export async function verifyUserCredentials(email: string, password: string, corrId: string = ''): Promise<boolean> {
     logger.debug(makeLoggerId('verifyUserCredentials'), corrId, email);
     const emailHash = hashEmail(email);
-    const userCredentials = await prisma.credentials.findUnique({ where: { ref: emailHash } });
+    const emailHashArray = new Uint8Array(emailHash.buffer as ArrayBuffer);
+    const userCredentials = await prisma.credentials.findUnique({ where: { ref: emailHashArray } });
     if (!userCredentials) return false;
     const hashedPassword = hashPassword(password, userCredentials.salt);
     return hashedPassword === userCredentials.password;
@@ -103,6 +104,7 @@ export async function createUser(name: string, email: string, password: string, 
     const logId = makeLoggerId('createUser');
     logger.debug(logId, corrId, name, email);
     const hashedEmail = hashEmail(email);
+    const emailHashArray = new Uint8Array(hashedEmail.buffer as ArrayBuffer);
     const salt = generateSalt();
     const hashedPassword = hashPassword(password, salt);
 
@@ -116,7 +118,7 @@ export async function createUser(name: string, email: string, password: string, 
 
     const credentials = await prisma.credentials.create({
         data: {
-            ref: hashedEmail,
+            ref: emailHashArray,
             password: hashedPassword,
             salt: salt,
         },
@@ -138,7 +140,8 @@ export async function deleteUser(id: string, corrId: string = '') {
     if (!user) return;
     await prisma.user.delete({ where: { id } });
     const hashedEmail = hashEmail(user.email);
-    const { count } = await prisma.credentials.deleteMany({ where: { ref: hashedEmail } });
+    const emailHashArray = new Uint8Array(hashedEmail.buffer as ArrayBuffer);
+    const { count } = await prisma.credentials.deleteMany({ where: { ref: emailHashArray } });
     if (count > 0) logger.debug(logId, corrId, 'Removed user credentials for id:', id);
     else logger.debug(logId, corrId, 'No credentials to delete for user id:', id);
 }
@@ -175,10 +178,17 @@ export async function updateUser(
     // prepare credentials update as needed
     const salt = password !== undefined && generateSalt();
     const credentialsReference = hashEmail(unchangedUserData!.email); // ref for credentials from original user email
+    const credentialReferenceHashArray = new Uint8Array(credentialsReference.buffer as ArrayBuffer);
+
+    const getEmailHash = (email: string) => {
+        const emailHash = hashEmail(email);
+        return new Uint8Array(emailHash.buffer as ArrayBuffer);
+    };
+
     const credentialsUpdate = {
-        ...(email !== undefined && { ref: hashEmail(email) }), // if email updated credentials needs a new hashed email reference
+        ...(email !== undefined && { ref: getEmailHash(email) }), // if email updated credentials needs a new hashed email reference
         ...(password !== undefined && { password: hashPassword(password, salt as string), salt: salt as string }),
     };
     // credentials has to be updated via hash of previous email
-    await prisma.credentials.update({ where: { ref: credentialsReference }, data: credentialsUpdate });
+    await prisma.credentials.update({ where: { ref: credentialReferenceHashArray }, data: credentialsUpdate });
 }

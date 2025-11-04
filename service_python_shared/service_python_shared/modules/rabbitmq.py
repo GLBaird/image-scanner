@@ -209,7 +209,12 @@ class RabbitMqMessageReceiver(RabbitMqConnectionManager):
         logger = get_logger("RabbitMqMessageReceiver/get_messages_on_queue")
 
         queue = await self.connection.channel.declare_queue(
-            self.queue_name, durable=self.connection.durable
+            self.queue_name,
+            durable=self.connection.durable,
+            arguments={
+                "x-dead-letter-exchange": "img.dlx",
+                "x-dead-letter-routing-key": f"{self.queue_name}.dead",
+            },
         )
 
         async def _consumer(message: aio_pika.IncomingMessage):
@@ -217,18 +222,10 @@ class RabbitMqMessageReceiver(RabbitMqConnectionManager):
             try:
                 raw = message.body.decode("utf-8")
                 parsed_message = RabbitMqMessage[Any].model_validate_json(raw)
-
                 await callback(parsed_message, message)
 
-                if not self.auto_acknowledge:
-                    await message.ack()
             except Exception as e:
                 logger.error(f"Error processing message: {e}")
-                # Reject to DLQ if failed
-                try:
-                    await message.reject(requeue=False)
-                except Exception as nack_err:
-                    logger.error(f"failed to reject message: {nack_err}")
 
         await queue.consume(_consumer, no_ack=False)
 

@@ -56,9 +56,7 @@ config: Config = {
         "job_manager_queue_name": os.environ.get(
             "RABBIT_MQ_JOB_MANAGER_QUEUE_NAME", "JobManager"
         ),
-        "prefetchLimit": parse_int(
-            os.environ.get("RABBIT_MQ_PREFETCH_LIMIT", "10"), 10
-        ),
+        "prefetchLimit": parse_int(os.environ.get("RABBIT_MQ_PREFETCH_LIMIT", "8"), 10),
     },
     "logger": {
         "combined_log": os.environ.get(

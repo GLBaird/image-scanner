@@ -12,9 +12,10 @@ import logger from '@/lib/logger';
 export default async function checkForAuthAndErrors(
     logId: string,
     values?: unknown[],
+    defaultCorrId?: string,
 ): Promise<{ errors: string[]; corrId: string }> {
     const session = await auth();
-    const corrId = await getCorrId();
+    const corrId = defaultCorrId ?? (await getCorrId());
     const errors = [];
 
     if (!session) {
@@ -22,7 +23,7 @@ export default async function checkForAuthAndErrors(
         errors.push('User not authorised.');
     }
 
-    if (!corrId) {
+    if (!corrId && !defaultCorrId) {
         logger.warn(logId, corrId, 'request is missing CorrId');
         errors.push('Request missing correct data.');
     }
