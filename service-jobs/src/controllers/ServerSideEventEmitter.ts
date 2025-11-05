@@ -89,7 +89,7 @@ class ServerSideEventEmitter {
             res.write(': connected\n\n');
             const { jobId } = req.params;
 
-            // res.flushHeaders();
+            res.flushHeaders();
 
             /** helper: send a JSON chunk */
             const send = (data: unknown) => res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -101,11 +101,21 @@ class ServerSideEventEmitter {
             logger.debug(`sending message to listeners: ${this.eventListeners}`, logId);
             this.eventListeners.forEach((listener) => listener(jobId, 'open'));
 
+            const pingInterval = setInterval(() => {
+                res.write(`: ping\n\n`);
+            }, 15000); // every 15s
+
             // tidy up when the client goes away
             req.on('close', () => {
+                clearInterval(pingInterval);
                 this.bus.off('message', onMessage);
                 res.end();
                 this.eventListeners.forEach((listener) => listener(jobId, 'close'));
+            });
+
+            res.on('error', () => {
+                this.bus.off('message', onMessage);
+                clearInterval(pingInterval);
             });
         });
 
