@@ -334,3 +334,6 @@ Classifier: {
     },
 } as StageHandler,
 ```
+
+You will also need to add your data to the DB via the Prisma Schema: `service-jobs/prisma/schema.prisma` and add
+Data-Access methods following the patters found for the other services in `service-jobs/src/data-access`.
