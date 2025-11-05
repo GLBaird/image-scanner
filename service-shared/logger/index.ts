@@ -1,4 +1,5 @@
 import { createLogger, transports, format } from 'winston';
+import 'winston-daily-rotate-file';
 import config from '../configs/config';
 
 const logger = createLogger({
@@ -6,19 +7,22 @@ const logger = createLogger({
     format: format.combine(format.timestamp(), format.json()),
     defaultMeta: { service: config.logger.serviceName },
     transports: [
-        new transports.File({
+        new transports.DailyRotateFile({
             filename: config.logger.errorLog,
             level: 'error',
-            maxsize: 10,
-            rotationFormat: () => '_' + new Date().toISOString().split('T')[0],
+            datePattern: 'YYYY-MM-DD',
+            maxFiles: '14d',
+            maxSize: '10m',
         }),
-        new transports.File({
+        new transports.DailyRotateFile({
             filename: config.logger.combinedLog,
-            maxsize: 10,
-            rotationFormat: () => '_' + new Date().toISOString().split('T')[0],
+            datePattern: 'YYYY-MM-DD',
+            maxFiles: '14d',
+            maxSize: '10m',
         }),
         new transports.Console({
             format: format.combine(format.colorize(), format.simple()),
+            handleExceptions: true,
         }),
     ],
 });

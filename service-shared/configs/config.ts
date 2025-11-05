@@ -15,8 +15,8 @@ const config = {
         prefetchLimit: Number.parseInt(process.env.RABBIT_MQ_PREFETCH_LIMIT ?? '8', 10) ?? 8,
     },
     logger: {
-        combinedLog: path.resolve(__dirname, '../logs/combined.log'),
-        errorLog: path.resolve(__dirname, '../logs/error.log'),
+        combinedLog: path.resolve(__dirname, '../logs/combined-%DATE%.log'),
+        errorLog: path.resolve(__dirname, '../logs/error-%DATE%.log'),
         level: process.env.LOG_LEVEL || 'debug',
         serviceName: process.env.SERVICE_NAME || 'image-scanner-service',
     },

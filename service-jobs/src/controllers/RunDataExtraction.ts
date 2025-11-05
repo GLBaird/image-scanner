@@ -75,6 +75,7 @@ export async function listenForDataExtractionUpdates() {
             'listenForDataExtractionUpdates',
             corrId,
         );
+        logger.debug(`receiving info for ${jobId} on image: ${filepath}`, logId);
         const hasErrors = errors.length > 0;
         const pStore = ProgressStore.get();
         if (hasErrors) {
@@ -84,12 +85,28 @@ export async function listenForDataExtractionUpdates() {
             );
             errors.forEach((e) => pStore.registerStageError(jobId, stage, e));
         }
-        logger.debug(`receiving info for ${jobId} on image: ${filepath}`);
         const stageHandler = StageDataHandler[stage] as StageHandler;
-        if (receiver !== undefined)
-            stageHandler.addDataToStore({ corrId, md5, data: data.message, message, receiver });
+        if (!stageHandler) {
+            logger.error(`Failed to find stage handler for stage name: ${stage}`, logId);
+            pStore.registerStageError(jobId, stage, 'Failed to find stage handler');
+            return;
+        }
+        stageHandler.addDataToStore({
+            corrId,
+            md5,
+            data: data.message,
+            message,
+            receiver: receiver!,
+        });
         const stageName = config.dataExtractionStages.find((des) => des.queueName === stage)?.name;
-        if (!stageName) return;
+        if (!stageName) {
+            logger.error(
+                `Failed to find stage name for progress update with queueName ref: ${stage}`,
+                logId,
+            );
+            pStore.registerStageError(jobId, stage, 'Failed to find correct stage name');
+            return;
+        }
         const completed = pStore.updateForStage(jobId, stageName, filepath);
         if (completed) {
             logger.info(`all tasks completed for job: ${jobId}`, logId);
